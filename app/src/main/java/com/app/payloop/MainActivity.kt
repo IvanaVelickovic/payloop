@@ -11,37 +11,32 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.app.payloop.mainscreen.MainScreen
+import com.app.payloop.settings.EditSubscriptionScreen
+import com.app.payloop.settings.SettingsScreen
+import com.app.payloop.settings.SubscriptionViewScreen
 import com.app.payloop.ui.theme.PayloopTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        //enableEdgeToEdge()
         setContent {
-            PayloopTheme {
+            MainScreenPreview()
+            /*PayloopTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
                         name = "Android",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
-            }
+            } */
         }
     }
 }
 
+@Preview
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    PayloopTheme {
-        Greeting("Android")
-    }
+fun MainScreenPreview() {
+    EditSubscriptionScreen()
 }
