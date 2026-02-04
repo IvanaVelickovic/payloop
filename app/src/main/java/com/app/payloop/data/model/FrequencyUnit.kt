@@ -1,4 +1,4 @@
-package com.app.payloop.data
+package com.app.payloop.data.model
 
 enum class FrequencyUnit {
     DAY,

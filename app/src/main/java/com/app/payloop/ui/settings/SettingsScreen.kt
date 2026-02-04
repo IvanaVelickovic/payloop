@@ -1,4 +1,4 @@
-package com.app.payloop.settings
+package com.app.payloop.ui.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
