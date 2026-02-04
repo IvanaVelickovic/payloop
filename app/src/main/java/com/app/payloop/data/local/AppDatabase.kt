@@ -1,10 +1,12 @@
-package com.app.payloop.data
+package com.app.payloop.data.local
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.app.payloop.data.local.SubscriptionDao
+import com.app.payloop.data.model.Subscription
 import kotlin.concurrent.Volatile
 
 @Database(entities = [Subscription::class], version = 1, exportSchema = false)

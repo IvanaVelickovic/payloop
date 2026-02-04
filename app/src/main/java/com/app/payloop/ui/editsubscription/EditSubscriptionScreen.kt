@@ -49,6 +49,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,10 +141,10 @@ fun EditSubscriptionScreen() {
                 TextButton(onClick = {
                     val millis = datePickerState.selectedDateMillis
                     if (millis != null) {
-                        selectedDate = java.text.SimpleDateFormat(
+                        selectedDate = SimpleDateFormat(
                             "dd/MM/yyyy",
-                            java.util.Locale.getDefault()
-                        ).format(java.util.Date(millis))
+                            Locale.getDefault()
+                        ).format(Date(millis))
                     }
                     showDatePicker = false
                 }) {

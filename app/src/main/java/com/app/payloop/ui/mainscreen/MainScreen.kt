@@ -1,4 +1,4 @@
-package com.app.payloop.mainscreen
+package com.app.payloop.ui.mainscreen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
