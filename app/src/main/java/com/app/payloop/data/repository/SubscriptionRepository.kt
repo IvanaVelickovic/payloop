@@ -1,0 +1,99 @@
+package com.app.payloop.data.repository
+
+import com.app.payloop.data.local.SubscriptionDao
+import com.app.payloop.data.model.FrequencyUnit
+import com.app.payloop.data.model.Subscription
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+
+class SubscriptionRepository(
+    private val dao: SubscriptionDao
+) {
+
+    fun getAllSubscriptions(): Flow<List<Subscription>> {
+        return dao.getAllSubscriptions()
+    }
+
+    suspend fun getSubscriptionById(id: Long): Subscription? {
+        return dao.getSubscriptionById(id)
+    }
+
+    suspend fun insertSubscription(subscription: Subscription) {
+        dao.insertSubscription(subscription)
+    }
+
+    suspend fun updateSubscription(subscription: Subscription) {
+        dao.updateSubscription(subscription)
+    }
+
+    suspend fun deleteSubscription(subscription: Subscription) {
+        dao.deleteSubscription(subscription)
+    }
+
+    suspend fun seedDummyData() {
+        val dummySubscriptions = listOf(
+            Subscription(
+                name = "Netflix",
+                price = 1299,
+                isTrial = false,
+                nextChargeTimestamp = 1707158400,
+                isReminderEnabled = true,
+                reminderDaysBefore = 3,
+                sharedWith = 1,
+                frequencyUnit = FrequencyUnit.MONTH,
+                frequencyInterval = 1,
+                isManual = true,
+                icon = "netflix_icon",
+                color = 0xFFE50914.toInt()
+            ),
+            Subscription(
+                name = "Spotify",
+                price = 999,
+                isTrial = true,
+                nextChargeTimestamp = 1707926400,
+                isReminderEnabled = false,
+                reminderDaysBefore = 0,
+                sharedWith = 2,
+                frequencyUnit = FrequencyUnit.MONTH,
+                frequencyInterval = 3,
+                isManual = false,
+                icon = "spotify_icon",
+                color = 0xFF1DB954.toInt()
+            ),
+            Subscription(
+                name = "Disney+",
+                price = 899,
+                isTrial = false,
+                nextChargeTimestamp = 1708540800,
+                isReminderEnabled = true,
+                reminderDaysBefore = 2,
+                sharedWith = 0,
+                frequencyUnit = FrequencyUnit.MONTH,
+                frequencyInterval = 1,
+                isManual = true,
+                icon = "disney_icon",
+                color = 0xFF113CCF.toInt()
+            ),
+            Subscription(
+                name = "Amazon prime",
+                price = 1199,
+                isTrial = false,
+                nextChargeTimestamp = 1708540800,
+                isReminderEnabled = false,
+                reminderDaysBefore = 2,
+                sharedWith = 0,
+                frequencyUnit = FrequencyUnit.MONTH,
+                frequencyInterval = 1,
+                isManual = false,
+                icon = "amazon_icon",
+                color = 0xFF00A8E1.toInt()
+            )
+        )
+
+        val existing = dao.getAllSubscriptions().first()
+        if(existing.isEmpty()){
+            dummySubscriptions.forEach { insertSubscription(it) }
+        }
+
+    }
+}

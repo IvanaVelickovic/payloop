@@ -2,6 +2,7 @@ package com.app.payloop.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -49,16 +50,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import com.app.payloop.ui.editsubscription.EditSubscriptionEvent
+import com.app.payloop.ui.editsubscription.EditSubscriptionState
+import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
+import com.app.payloop.ui.subscriptionview.ViewSubscriptionState
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditSubscriptionScreen() {
+fun EditSubscriptionScreen(
+    state: EditSubscriptionState,
+    subscriptionId: Long,
+    navController: NavController,
+    onEvent: (EditSubscriptionEvent) -> Unit
+) {
     // State variables
-    var subscriptionName by remember { mutableStateOf("Netflix") }
-    var price by remember { mutableStateOf("12") }
+    //var subscriptionName by remember { mutableStateOf("Netflix") }
+   // var price by remember { mutableStateOf("12") }
     var peopleCount by remember { mutableStateOf("") }
     val frequencyOptions = listOf("Daily", "Monthly", "Yearly")
     var selectedFrequency by remember { mutableStateOf(frequencyOptions[0]) }
@@ -68,7 +79,15 @@ fun EditSubscriptionScreen() {
     var reminderDays by remember { mutableStateOf("3") }
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
-    var selectedDate by remember { mutableStateOf("No date selected") }
+   // var selectedDate by remember { mutableStateOf("No date selected") }
+
+    var selectedDate = state.selectedDateTimestamp?.let { timestamp ->
+        val millis = timestamp * 1000
+        SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(millis))
+    } ?: "No date selected"
+
+
+
 
     Column(
         modifier = Modifier
@@ -85,17 +104,21 @@ fun EditSubscriptionScreen() {
         ) {}
 
         // Header with back button and title
-        EditSubscriptionHeader()
+        EditSubscriptionHeader(navController)
 
         // Form sections
         SubscriptionNameField(
-            value = subscriptionName,
-            onValueChange = { subscriptionName = it }
+            value = state.name,
+            onValueChange = { newName ->
+                onEvent(EditSubscriptionEvent.NameChanged(newName))
+            }
         )
 
         PriceField(
-            value = price,
-            onValueChange = { price = it }
+            value = state.price,
+            onValueChange = { newPrice ->
+                onEvent(EditSubscriptionEvent.PriceChanged(newPrice))
+            }
         )
 
         FrequencySection(
@@ -114,19 +137,25 @@ fun EditSubscriptionScreen() {
         )
 
         SharedWithField(
-            value = peopleCount,
-            onValueChange = { peopleCount = it }
+            value = state.peopleCount,
+            onValueChange = { newPeopleCount ->
+                onEvent(EditSubscriptionEvent.PeopleCountChanged(newPeopleCount))
+            }
         )
 
         ReminderToggle(
-            enabled = reminderEnabled,
-            onToggle = { reminderEnabled = it }
+            enabled = state.reminderEnabled,
+            onToggle = { reminder ->
+                onEvent(EditSubscriptionEvent.ReminderToggle(reminder))
+            }
         )
 
-        if (reminderEnabled) {
+        if (state.reminderEnabled) {
             ReminderDaysField(
-                value = reminderDays,
-                onValueChange = { reminderDays = it }
+                value = state.reminderDays,
+                onValueChange = { reminderDays ->
+                    onEvent(EditSubscriptionEvent.ReminderDaysChanged(reminderDays))
+                }
             )
         }
 
@@ -163,13 +192,16 @@ fun EditSubscriptionScreen() {
 }
 
 @Composable
-fun EditSubscriptionHeader() {
+fun EditSubscriptionHeader(navController: NavController) {
     Row(
         modifier = Modifier
             .background(Color(0xFF5B7FBD))
             .fillMaxWidth()
             .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-            .height(36.dp),
+            .height(36.dp)
+            .clickable{
+                navController.popBackStack()
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

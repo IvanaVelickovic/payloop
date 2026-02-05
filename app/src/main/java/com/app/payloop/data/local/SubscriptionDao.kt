@@ -24,5 +24,5 @@ interface SubscriptionDao {
     suspend fun deleteSubscription(subscription: Subscription)
 
     @Query("SELECT * FROM subscriptions WHERE id = :id")
-    fun getSubscriptionById(id: Long): Subscription
+    suspend fun getSubscriptionById(id: Long): Subscription?
 }

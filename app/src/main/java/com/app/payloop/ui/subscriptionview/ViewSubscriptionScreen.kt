@@ -1,6 +1,7 @@
 package com.app.payloop.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
@@ -39,90 +41,151 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import com.app.payloop.data.model.Subscription
+import com.app.payloop.navigation.NavRoutes
+import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
+import com.app.payloop.ui.subscriptionview.ViewSubscriptionState
 
 @Composable
-fun SubscriptionViewScreen() {
-    var reminderEnabled by remember { mutableStateOf(false) }
+fun ViewSubscriptionScreen(
+    state: ViewSubscriptionState,
+    subscriptionId: Long,
+    navController: NavController,
+    onEvent: (ViewSubscriptionEvent) -> Unit
+) {
+    val subscription = state.subscription
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    if(subscription == null) {
+        Text("Loading")
+        return
+    }
 
-    Column(
+    if (showDeleteDialog) {
+        DeleteConfirmationDialog(
+            subscriptionName = subscription.name,
+            onConfirm = {
+                onEvent(ViewSubscriptionEvent.DeleteSubscription)
+                showDeleteDialog = false
+                navController.popBackStack()
+            },
+            onDismiss = { showDeleteDialog = false }
+        )
+    }
+
+    val reminderEnabled = subscription.isReminderEnabled
+
+    val date = java.util.Date(subscription.nextChargeTimestamp * 1000)
+    val formatter = java.text.SimpleDateFormat("MMM d, yyyy")
+    val formattedDate = formatter.format(date)
+
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
-        // Status bar spacer
-        Row(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF5B7FBD))
-                .statusBarsPadding()
-        ) {}
-
-        // Header with back button and title
-        Row(
-            modifier = Modifier
-                .background(Color(0xFF5B7FBD))
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                .height(36.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxSize()
+                .background(Color.White)
         ) {
-            Icon(
-                imageVector = Icons.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White,
+            // Status bar spacer
+            Row(
                 modifier = Modifier
-                    .height(38.dp)
-                    .width(38.dp)
-                    .padding(end = 8.dp)
+                    .fillMaxWidth()
+                    .background(Color(0xFF5B7FBD))
+                    .statusBarsPadding()
+            ) {}
+
+            // Header with back button and title
+            Row(
+                modifier = Modifier
+                    .background(Color(0xFF5B7FBD))
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                    .height(36.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .height(38.dp)
+                        .width(38.dp)
+                        .padding(end = 8.dp)
+                        .clickable{
+                            navController.popBackStack()
+                        }
+                )
+                Text(
+                    text = "Subscription",
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+
+            // Subscription header (logo and name)
+            SubscriptionHeader(subscription = subscription)
+
+            Divider(modifier = Modifier.padding(horizontal = 14.dp))
+
+            // Price
+            SubscriptionDetailRow(
+                icon = "$",
+                iconBackgroundColor = Color(0xFFE3EDFF),
+                iconTextColor = Color(0xFF5B7FBD),
+                label = "Price",
+                value = "${subscription.price/100f}€ • Every year",
+                useTextIcon = true
             )
-            Text(
-                text = "Subscription",
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
+
+            // Next charge
+            SubscriptionDetailRow(
+                icon = Icons.Outlined.DateRange,
+                iconBackgroundColor = Color(0xFFE3EDFF),
+                iconTint = Color(0xFF5B7FBD),
+                label = "Next charge",
+                value = formattedDate
             )
+
+            //Reminder
+            ReminderRow(
+                enabled = reminderEnabled,
+                onEnabledChange = { newValue ->
+                    onEvent(ViewSubscriptionEvent.ToggleReminder(newValue))
+                }
+            )
+
+            // Action buttons
+            ActionButtons(
+                onDelete = {
+                    showDeleteDialog = true
+                },
+                onEdit = {
+                    navController.navigate(
+                        NavRoutes.EditSubscription.createRoute(subscription.id.toLong())
+                    )
+                }
+            )
+
         }
 
-        // Subscription header (logo and name)
-        SubscriptionHeader()
 
-        Divider(modifier = Modifier.padding(horizontal = 14.dp))
-
-        // Price
-        SubscriptionDetailRow(
-            icon = "$",
-            iconBackgroundColor = Color(0xFFE3EDFF),
-            iconTextColor = Color(0xFF5B7FBD),
-            label = "Price",
-            value = "20€ • Every year",
-            useTextIcon = true
-        )
-
-        // Next charge
-        SubscriptionDetailRow(
-            icon = Icons.Outlined.DateRange,
-            iconBackgroundColor = Color(0xFFE3EDFF),
-            iconTint = Color(0xFF5B7FBD),
-            label = "Next charge",
-            value = "Feb 17, 2026"
-        )
-
-        //Reminder
-        ReminderRow(
-            enabled = reminderEnabled,
-            onEnabledChange = { reminderEnabled = it }
-        )
-
-        // Action buttons at bottom
-        ActionButtons()
     }
+
+
 }
 
 @Composable
-fun SubscriptionHeader() {
+fun SubscriptionHeader(subscription: Subscription) {
+    val iconColor = subscription.color?.let { Color(it) } ?: Color.Gray
     Row(
         modifier = Modifier.padding(16.dp),
-        horizontalArrangement = Arrangement.Start
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
             modifier = Modifier.padding(top = 12.dp, end = 8.dp),
@@ -130,14 +193,14 @@ fun SubscriptionHeader() {
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "N",
+                text = subscription.name.first().toString(),
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .background(
-                        Color(0xFFE7000B),
+                        iconColor,
                         shape = RoundedCornerShape(12.dp)
                     )
                     .padding(15.dp)
@@ -146,25 +209,14 @@ fun SubscriptionHeader() {
             )
         }
         Column(
-            modifier = Modifier.padding(vertical = 14.dp),
+            modifier = Modifier.padding(top = 16.dp),
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Netflix",
+                text = subscription.name,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(bottom = 10.dp, top = 4.dp)
-            )
-            Text(
-                text = "PAY YOURSELF",
-                fontSize = 12.sp,
-                color = Color(0xFF1447E6),
-                modifier = Modifier
-                    .background(
-                        Color(0xFFDBEAFE),
-                        shape = RoundedCornerShape(10.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
             )
         }
     }
@@ -286,7 +338,8 @@ fun ReminderRow(
         }
         Switch(
             checked = enabled,
-            onCheckedChange = onEnabledChange,
+            onCheckedChange = { newValue ->
+                onEnabledChange(newValue) },
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
                 checkedTrackColor = Color(0xFF5B7FBD),
@@ -300,17 +353,20 @@ fun ReminderRow(
 }
 
 @Composable
-fun ActionButtons() {
+fun ActionButtons(
+    onDelete : () -> Unit = {},
+    onEdit : () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 26.dp, end = 26.dp, bottom = 8.dp),
+            .padding(start = 26.dp, end = 26.dp, bottom = 8.dp, top = 0.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Bottom
     ) {
         // Delete button
         Button(
-            onClick = {},
+            onClick = onDelete,
             modifier = Modifier
                 .weight(0.9f)
                 .padding(top = 16.dp, bottom = 16.dp, end = 8.dp)
@@ -336,7 +392,7 @@ fun ActionButtons() {
 
         // Edit button
         Button(
-            onClick = {},
+            onClick = onEdit,
             modifier = Modifier
                 .weight(0.9f)
                 .padding(top = 16.dp, bottom = 16.dp, start = 8.dp)
@@ -360,3 +416,47 @@ fun ActionButtons() {
         }
     }
 }
+
+@Composable
+fun DeleteConfirmationDialog(
+    subscriptionName: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Delete Subscription?",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text("Are you sure you want to delete $subscriptionName? This action cannot be undone.")
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFC10007)
+                )
+            ) {
+                Text("Delete", color = Color.White)
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFF3F4F6),
+                    contentColor = Color(0xFF4A5565)
+                )
+            ) {
+                Text("Cancel")
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
+}
+
