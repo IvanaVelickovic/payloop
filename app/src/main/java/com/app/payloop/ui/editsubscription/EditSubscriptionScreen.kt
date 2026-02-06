@@ -37,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.app.payloop.data.model.FrequencyUnit
 import com.app.payloop.ui.editsubscription.EditSubscriptionEvent
 import com.app.payloop.ui.editsubscription.EditSubscriptionState
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
@@ -67,26 +69,31 @@ fun EditSubscriptionScreen(
     navController: NavController,
     onEvent: (EditSubscriptionEvent) -> Unit
 ) {
-    // State variables
-    //var subscriptionName by remember { mutableStateOf("Netflix") }
-   // var price by remember { mutableStateOf("12") }
-    var peopleCount by remember { mutableStateOf("") }
-    val frequencyOptions = listOf("Daily", "Monthly", "Yearly")
-    var selectedFrequency by remember { mutableStateOf(frequencyOptions[0]) }
-    var customFrequencyEnabled by remember { mutableStateOf(false) }
-    var customFrequencyValue by remember { mutableStateOf("3") }
-    var reminderEnabled by remember { mutableStateOf(false) }
-    var reminderDays by remember { mutableStateOf("3") }
+
+    val frequencyOptions = listOf("Daily", "Weekly", "Monthly", "Yearly")
+
+    val selectedFrequencyString = when (state.selectedFrequency) {
+        FrequencyUnit.DAY -> "Daily"
+        FrequencyUnit.WEEK -> "Weekly"
+        FrequencyUnit.MONTH -> "Monthly"
+        FrequencyUnit.YEAR -> "Yearly"
+    }
+
+    //calendar
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState()
-   // var selectedDate by remember { mutableStateOf("No date selected") }
+
 
     var selectedDate = state.selectedDateTimestamp?.let { timestamp ->
         val millis = timestamp * 1000
         SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(millis))
     } ?: "No date selected"
 
-
+    LaunchedEffect(state.isSaved) {
+        if(state.isSaved) {
+            navController.popBackStack()
+        }
+    }
 
 
     Column(
@@ -123,12 +130,25 @@ fun EditSubscriptionScreen(
 
         FrequencySection(
             options = frequencyOptions,
-            selectedOption = selectedFrequency,
-            onOptionSelected = { selectedFrequency = it },
-            customEnabled = customFrequencyEnabled,
-            onCustomToggle = { customFrequencyEnabled = it },
-            customValue = customFrequencyValue,
-            onCustomValueChange = { customFrequencyValue = it }
+            selectedOption = selectedFrequencyString,
+            onOptionSelected = { selectedString ->
+                val frequencyUnit = when (selectedString) {
+                    "Daily" -> FrequencyUnit.DAY
+                    "Weekly" ->  FrequencyUnit.WEEK
+                    "Monthly" ->  FrequencyUnit.MONTH
+                    "Yearly" -> FrequencyUnit.YEAR
+                    else -> FrequencyUnit.MONTH
+                }
+                onEvent(EditSubscriptionEvent.FrequencyChanged(frequencyUnit))
+            },
+            customEnabled = state.customFrequencyEnabled,
+            onCustomToggle = { enabled ->
+                onEvent(EditSubscriptionEvent.CustomFrequencyToggle(enabled))
+            },
+            customValue = state.customFrequencyValue,
+            onCustomValueChange = { value ->
+                onEvent(EditSubscriptionEvent.CustomFrequencyValueChanged(value))
+            }
         )
 
         NextChargeDateField(
@@ -159,7 +179,11 @@ fun EditSubscriptionScreen(
             )
         }
 
-        SaveEditButton()
+        SaveEditButton(
+            onSave = {
+                onEvent(EditSubscriptionEvent.Save)
+            }
+        )
     }
 
     // Date picker dialog
@@ -170,10 +194,8 @@ fun EditSubscriptionScreen(
                 TextButton(onClick = {
                     val millis = datePickerState.selectedDateMillis
                     if (millis != null) {
-                        selectedDate = SimpleDateFormat(
-                            "dd/MM/yyyy",
-                            Locale.getDefault()
-                        ).format(Date(millis))
+                        val timestampInSeconds = millis/1000
+                        onEvent(EditSubscriptionEvent.DateChanged(timestampInSeconds))
                     }
                     showDatePicker = false
                 }) {
@@ -399,6 +421,7 @@ fun FrequencySection(
                         suffix = {
                             val unit = when (selectedOption) {
                                 "Daily" -> "days"
+                                "Weekly" -> "weeks"
                                 "Monthly" -> "months"
                                 else -> "years"
                             }
@@ -425,7 +448,7 @@ fun FrequencySection(
                         shape = RoundedCornerShape(10.dp),
                     )
                     Text(
-                        text = "Please select Daily for input of days, Monthly for input of months and Yearly for input of years.",
+                        text = "Please select Daily for input of days, Weekly for input of weeks, Monthly for input of months and Yearly for input of years.",
                         fontSize = 13.sp,
                         color = Color.Gray,
                         modifier = Modifier.padding(start = 8.dp)
@@ -585,9 +608,11 @@ fun ReminderDaysField(
 }
 
 @Composable
-fun SaveEditButton() {
+fun SaveEditButton(
+    onSave: () -> Unit
+) {
     Button(
-        onClick = {},
+        onClick = onSave,
         modifier = Modifier
             .padding(top = 12.dp, end = 20.dp, start = 20.dp, bottom = 20.dp)
             .height(50.dp)

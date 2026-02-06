@@ -25,4 +25,7 @@ interface SubscriptionDao {
 
     @Query("SELECT * FROM subscriptions WHERE id = :id")
     suspend fun getSubscriptionById(id: Long): Subscription?
+
+    @Query("SELECT * FROM subscriptions WHERE id = :id")
+    fun observeSubscriptionById(id: Long): Flow<Subscription>
 }

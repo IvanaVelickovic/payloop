@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.app.payloop.data.model.FrequencyUnit
 import com.app.payloop.data.model.Subscription
 import com.app.payloop.navigation.NavRoutes
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
@@ -78,6 +79,16 @@ fun ViewSubscriptionScreen(
     val date = java.util.Date(subscription.nextChargeTimestamp * 1000)
     val formatter = java.text.SimpleDateFormat("MMM d, yyyy")
     val formattedDate = formatter.format(date)
+
+    var frequency = when(subscription.frequencyUnit) {
+        FrequencyUnit.DAY -> "day"
+        FrequencyUnit.WEEK -> "week"
+        FrequencyUnit.MONTH -> "month"
+        FrequencyUnit.YEAR -> "year"
+    }
+
+    if (subscription.frequencyInterval > 1) frequency = frequency + "s"
+    val frequencyInterval = if (subscription.frequencyInterval == 1) "" else subscription.frequencyInterval.toString() + " "
 
 
     Box(
@@ -138,7 +149,7 @@ fun ViewSubscriptionScreen(
                 iconBackgroundColor = Color(0xFFE3EDFF),
                 iconTextColor = Color(0xFF5B7FBD),
                 label = "Price",
-                value = "${subscription.price/100f}€ • Every year",
+                value = "${subscription.price/100f}€ • Every ${frequencyInterval}${frequency}",
                 useTextIcon = true
             )
 
@@ -156,7 +167,8 @@ fun ViewSubscriptionScreen(
                 enabled = reminderEnabled,
                 onEnabledChange = { newValue ->
                     onEvent(ViewSubscriptionEvent.ToggleReminder(newValue))
-                }
+                },
+                reminderDaysBefore = subscription.reminderDaysBefore
             )
 
             // Action buttons
@@ -288,7 +300,8 @@ fun SubscriptionDetailRow(
 @Composable
 fun ReminderRow(
     enabled: Boolean,
-    onEnabledChange: (Boolean) -> Unit
+    onEnabledChange: (Boolean) -> Unit,
+    reminderDaysBefore : Int
 ) {
     Row(
         modifier = Modifier
@@ -329,7 +342,7 @@ fun ReminderRow(
                     color = Color(0xFF4A5565)
                 )
                 Text(
-                    text = if (enabled) "Enabled" else "Disabled",
+                    text = "${reminderDaysBefore} days before",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(top = 4.dp)

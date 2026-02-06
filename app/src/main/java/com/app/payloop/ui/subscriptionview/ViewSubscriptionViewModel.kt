@@ -12,6 +12,7 @@ import com.app.payloop.ui.subscriptionview.ViewSubscriptionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ViewSubscriptionViewModel(
@@ -23,7 +24,14 @@ class ViewSubscriptionViewModel(
     val state: StateFlow<ViewSubscriptionState> = _state
 
     init{
-        loadSubscription(subscriptionId)
+        viewModelScope.launch {
+            repository.observeSubscriptionById(subscriptionId)
+                .collect { sub ->
+                    _state.update {
+                        it.copy(subscription = sub)
+                    }
+                }
+        }
     }
 
     fun onEvent(event: ViewSubscriptionEvent) {
@@ -33,26 +41,6 @@ class ViewSubscriptionViewModel(
             }
             ViewSubscriptionEvent.DeleteSubscription -> {
                 deleteSubscription()
-            }
-        }
-    }
-
-    private fun loadSubscription(id : Long) {
-        viewModelScope.launch {
-            try {
-                val subscription = repository.getSubscriptionById(id)
-
-                _state.value = ViewSubscriptionState(
-                    subscription = subscription,
-                    isLoading = false,
-                    error = if (subscription == null) "Subscription not found" else null
-                )
-            } catch (e: Exception) {
-                _state.value = ViewSubscriptionState(
-                    subscription = null,
-                    isLoading = false,
-                    error = e.message ?: "Unknown error"
-                )
             }
         }
     }

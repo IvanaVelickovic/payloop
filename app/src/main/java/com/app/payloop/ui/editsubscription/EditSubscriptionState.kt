@@ -26,6 +26,8 @@ data class EditSubscriptionState (
 
     // UI stanje
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+
+    val isSaved: Boolean = false
 
 )

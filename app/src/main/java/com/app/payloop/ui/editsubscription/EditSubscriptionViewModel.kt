@@ -71,7 +71,7 @@ class EditSubscriptionViewModel(
             }
 
             EditSubscriptionEvent.Save -> {
-                //saveSubscription()
+                saveEditChanges()
             }
         }
     }
@@ -97,7 +97,8 @@ class EditSubscriptionViewModel(
                         reminderDays = sub.reminderDaysBefore?.toString() ?: "",
                         selectedDateTimestamp = sub.nextChargeTimestamp,
                         isLoading = false,
-                        error = null
+                        error = null,
+                        isSaved = false
                     )
                 }
 
@@ -115,27 +116,66 @@ class EditSubscriptionViewModel(
 
 
     private fun saveEditChanges(){
-        /*
         viewModelScope.launch {
-            _state.value.subscription?.let { currentSubscription ->
-                val updatedSubscription = currentSubscription.copy(
-                    isReminderEnabled = enabled
-                )
+            _state.update { it.copy(isLoading = true) }
 
-                try{
-                    repository.updateSubscription(updatedSubscription)
+            try {
+                val currentState = _state.value
 
-                    _state.value = _state.value.copy(
-                        subscription = updatedSubscription
-                    )
-                } catch(e: Exception) {
-                    _state.value = _state.value.copy(
-                        error = "Failed to update reminder: ${e.message}"
-                    )
+                if (currentState.name.isBlank()) {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "Subscription name cannot be empty"
+                        )
+                    }
+                    return@launch
                 }
 
+                val priceInCents = try {
+                    (currentState.price.toFloat() * 100).toLong()
+                } catch (e: NumberFormatException) {
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "Invalid price format"
+                        )
+                    }
+                    return@launch
+                }
+
+                val originalSub = repository.getSubscriptionById(subscriptionId)
+                    ?: throw Exception("Subscription not found")  //originalni subscription
+
+                val updatedSub = originalSub.copy(
+                    name = currentState.name,
+                    price = priceInCents,
+                    sharedWith = currentState.peopleCount.toIntOrNull() ?: 0,
+                    frequencyUnit = currentState.selectedFrequency,
+                    frequencyInterval = currentState.customFrequencyValue.toIntOrNull() ?: 1,
+                    isReminderEnabled = currentState.reminderEnabled,
+                    reminderDaysBefore = currentState.reminderDays.toIntOrNull() ?: 1,
+                    nextChargeTimestamp = currentState.selectedDateTimestamp ?: originalSub.nextChargeTimestamp
+                )
+
+                repository.updateSubscription(updatedSub)
+
+                _state.update{
+                    it.copy(
+                        isLoading = false,
+                        isSaved = true,
+                        error = null
+                    )
+                }
+            } catch(e: Exception) {
+                _state.update {
+                    it.copy(
+                        isLoading = false,
+                        error = "Failed to save: ${e.message}"
+                    )
+                }
             }
-        } */
+        }
     }
 
 

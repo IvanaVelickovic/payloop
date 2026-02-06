@@ -30,6 +30,10 @@ class SubscriptionRepository(
         dao.deleteSubscription(subscription)
     }
 
+    fun observeSubscriptionById(id: Long): Flow<Subscription> {
+        return dao.observeSubscriptionById(id)
+    }
+
     suspend fun seedDummyData() {
         val dummySubscriptions = listOf(
             Subscription(
@@ -68,7 +72,7 @@ class SubscriptionRepository(
                 isReminderEnabled = true,
                 reminderDaysBefore = 2,
                 sharedWith = 0,
-                frequencyUnit = FrequencyUnit.MONTH,
+                frequencyUnit = FrequencyUnit.YEAR,
                 frequencyInterval = 1,
                 isManual = true,
                 icon = "disney_icon",
