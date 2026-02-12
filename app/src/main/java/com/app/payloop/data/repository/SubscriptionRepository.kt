@@ -1,10 +1,14 @@
 package com.app.payloop.data.repository
 
+import androidx.compose.runtime.collectAsState
 import com.app.payloop.data.local.SubscriptionDao
 import com.app.payloop.data.model.FrequencyUnit
 import com.app.payloop.data.model.Subscription
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 class SubscriptionRepository(
     private val dao: SubscriptionDao
@@ -36,6 +40,53 @@ class SubscriptionRepository(
 
     suspend fun deleteAllSubscriptions(){
         dao.deleteAllSubscriptions()
+    }
+
+    suspend fun refreshExpiredSubscriptions() {
+        val zone = ZoneId.systemDefault()
+        val today = LocalDate.now(zone)
+
+        val subscriptions = dao.getAllSubscriptions().first()
+
+        val expiredSubscriptions = subscriptions.filter { sub ->
+            val nextChargeDate = Instant.ofEpochSecond(sub.nextChargeTimestamp)
+                .atZone(zone)
+                .toLocalDate()
+            nextChargeDate <= today
+        }
+
+        if (expiredSubscriptions.isNotEmpty()) {
+            val updatedSubscriptions = expiredSubscriptions.map { sub ->
+                if(sub.isTrial){
+                    sub.copy(
+                        isTrial = false,
+                        nextChargeTimestamp = calculateNextChargeDate(sub)
+                    )
+                } else {
+                    sub.copy(nextChargeTimestamp = calculateNextChargeDate(sub))
+                }
+            }
+            dao.updateSubscriptions(updatedSubscriptions)
+        }
+    }
+
+    fun calculateNextChargeDate(sub : Subscription) : Long{
+        val zone = ZoneId.systemDefault()
+        var nextChargeDate = Instant.ofEpochSecond(sub.nextChargeTimestamp)
+            .atZone(zone)
+            .toLocalDate()
+        val today = LocalDate.now(zone)
+
+        while(today >= nextChargeDate){
+            nextChargeDate = when(sub.frequencyUnit){
+                FrequencyUnit.DAY -> nextChargeDate.plusDays(sub.frequencyInterval.toLong())
+                FrequencyUnit.WEEK -> nextChargeDate.plusDays(sub.frequencyInterval.toLong() * 7)
+                FrequencyUnit.MONTH -> nextChargeDate.plusMonths(sub.frequencyInterval.toLong())
+                FrequencyUnit.YEAR -> nextChargeDate.plusYears(sub.frequencyInterval.toLong())
+            }
+        }
+
+        return nextChargeDate.atStartOfDay(zone).toEpochSecond()
     }
 
     suspend fun seedDummyData() {

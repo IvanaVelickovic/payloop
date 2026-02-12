@@ -26,6 +26,7 @@ class MainScreenViewModel(
 
     init {
         viewModelScope.launch {
+            repository.refreshExpiredSubscriptions()
             insertCurrencyIfNotExists()
             seedDatabase()
         }
