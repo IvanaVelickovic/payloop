@@ -77,7 +77,7 @@ class MainScreenViewModel(
                 when(sub.frequencyUnit){
                     FrequencyUnit.DAY -> currentPrice * (30.44/sub.frequencyInterval)
                     FrequencyUnit.WEEK -> currentPrice * (4.35/sub.frequencyInterval)
-                    FrequencyUnit.YEAR -> currentPrice / 12.0
+                    FrequencyUnit.YEAR -> currentPrice / (12.0 * sub.frequencyInterval)
                     FrequencyUnit.MONTH -> currentPrice / sub.frequencyInterval
                 }
             }

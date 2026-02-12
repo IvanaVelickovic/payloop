@@ -223,7 +223,7 @@ fun EditSubscriptionHeader(navController: NavController) {
         modifier = Modifier
             .background(Color(0xFF5B7FBD))
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+            .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 16.dp)
             .height(36.dp)
             .clickable{
                 navController.popBackStack()
@@ -349,7 +349,7 @@ fun FrequencySection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 options.forEach { option ->
                     FilterChip(
@@ -364,7 +364,7 @@ fun FrequencySection(
                             }
                         },
                         modifier = Modifier
-                            .weight(0.8f)
+                            .weight(0.85f)
                             .height(50.dp),
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = Color(0xFFF6F7FA),
@@ -584,7 +584,7 @@ fun ReminderDaysField(
         Row() {
             Text(
                 "Cannot enable while global reminders are off. Go to settings and enable Default Reminders to change this.",
-                modifier = Modifier.padding(start = 22.dp, bottom = 20.dp),
+                modifier = Modifier.padding(start = 22.dp, bottom = 20.dp, end = 20.dp),
                 fontSize = 14.sp,
                 color = Color(0xFF4A5565)
             )

@@ -115,7 +115,7 @@ fun ViewSubscriptionScreen(
                 modifier = Modifier
                     .background(Color(0xFF5B7FBD))
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 16.dp)
                     .height(36.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -176,7 +176,7 @@ fun ViewSubscriptionScreen(
             if(!globarReminder){
                 Row() {
                     Text("Cannot enable while global reminders are off. Go to settings and enable Default Reminders to change this.",
-                        modifier = Modifier.padding(start = 22.dp),
+                        modifier = Modifier.padding(start = 22.dp, end = 20.dp),
                         fontSize = 14.sp,
                         color = Color(0xFF4A5565))
                 }

@@ -105,7 +105,7 @@ fun MainScreen(
                 modifier = Modifier
                     .background(Color(0xFF5B7FBD))
                     .fillMaxWidth()
-                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 16.dp)
                     .height(36.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -355,7 +355,7 @@ fun CardText(subscription: Subscription, currency: String) {
         )
         Text(
             text = buildAnnotatedString {
-                append("Next charge date: ")
+                append("Next charge: ")
                 withStyle(
                     SpanStyle(
                         fontWeight = FontWeight.Bold,
@@ -381,7 +381,7 @@ fun CardTag(subscription: Subscription,
     if(subscription.isTrial) {
         Text(
             text = "FREE TRIAL • ${subscription.price / 100f}${currency} after",
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             color = Color(0xFFBB4D00),
             modifier = Modifier
@@ -389,7 +389,7 @@ fun CardTag(subscription: Subscription,
                     Color(0xFFFEF3C6),
                     shape = RoundedCornerShape(10.dp)
                 )
-                .padding(horizontal = 8.dp, vertical = 2.dp)
+                .padding(horizontal = 8.dp, vertical = 1.dp)
         )
     }
     else {
@@ -397,7 +397,7 @@ fun CardTag(subscription: Subscription,
             if(subscription.isManual){
                 Text(
                     text = "PAY YOURSELF",
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color(0xFF1447E6),
                     modifier = Modifier
@@ -405,7 +405,7 @@ fun CardTag(subscription: Subscription,
                             Color(0xFFDBEAFE),
                             shape = RoundedCornerShape(10.dp)
                         )
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                        .padding(horizontal = 8.dp, vertical = 1.dp)
                 )
 
             }

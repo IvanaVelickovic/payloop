@@ -35,6 +35,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -95,7 +96,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .background(Color(0xFF5B7FBD))
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 16.dp)
                 .height(36.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -127,11 +128,10 @@ fun SettingsScreen(
         ) {
             // Hourly wage section
             HourlyWageSection(
-                value = hourlyWage.toString(),
+                value = if (hourlyWage == 0.0) "" else hourlyWage.toString(),
                 onValueChange = { newValue ->
-                    newValue.toDoubleOrNull()?.let {
-                        viewModel.updateHourlyWage(it)
-                    }
+                    val doubleValue = newValue.toDoubleOrNull() ?: 0.0
+                    viewModel.updateHourlyWage(doubleValue)
                 },
                 selectedCurrency = selectedCurrency
             )
@@ -168,6 +168,13 @@ fun HourlyWageSection(
     onValueChange: (String) -> Unit,
     selectedCurrency : String
 ) {
+    var textInput by remember { mutableStateOf(value) }
+
+    // Sync initial value
+    LaunchedEffect(value) {
+        textInput = value
+    }
+
     Row(modifier = Modifier.padding(16.dp)) {
         Column {
             Text(
@@ -187,9 +194,26 @@ fun HourlyWageSection(
                 fontSize = 14.sp
             )
             OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
+                value = textInput,
+                onValueChange = { newValue ->
+                    // samo brojevi i jedna decimalna točka
+                    if (newValue.isEmpty() || newValue.matches(Regex("^\\d*\\.?\\d*$"))) {
+                        textInput = newValue
+
+                        newValue.toDoubleOrNull()?.let { validNumber ->
+                            onValueChange(newValue)
+                        } ?: run {
+                            // za prazan string, spremi 0
+                            if (newValue.isEmpty()) {
+                                onValueChange("0")
+                            }
+                        }
+                    }
+                },
                 textStyle = TextStyle(fontSize = 18.sp),
+                placeholder = {  // ⬅️ DODAJ PLACEHOLDER
+                    Text("0.00", color = Color.Gray)
+                },
                 modifier = Modifier
                     .padding(2.dp)
                     .fillMaxWidth(),
