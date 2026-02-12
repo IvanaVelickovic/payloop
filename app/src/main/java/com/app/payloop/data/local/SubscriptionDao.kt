@@ -28,4 +28,7 @@ interface SubscriptionDao {
 
     @Query("SELECT * FROM subscriptions WHERE id = :id")
     fun observeSubscriptionById(id: Long): Flow<Subscription>
+
+    @Query("DELETE FROM subscriptions")
+    suspend fun deleteAllSubscriptions()
 }

@@ -65,10 +65,11 @@ import java.util.Locale
 @Composable
 fun EditSubscriptionScreen(
     state: EditSubscriptionState,
-    subscriptionId: Long,
     navController: NavController,
     onEvent: (EditSubscriptionEvent) -> Unit
 ) {
+    val currency = state.currency
+    val globalReminder = state.globalReminder
 
     val frequencyOptions = listOf("Daily", "Weekly", "Monthly", "Yearly")
 
@@ -125,7 +126,8 @@ fun EditSubscriptionScreen(
             value = state.price,
             onValueChange = { newPrice ->
                 onEvent(EditSubscriptionEvent.PriceChanged(newPrice))
-            }
+            },
+            currency = currency
         )
 
         FrequencySection(
@@ -167,17 +169,19 @@ fun EditSubscriptionScreen(
             enabled = state.reminderEnabled,
             onToggle = { reminder ->
                 onEvent(EditSubscriptionEvent.ReminderToggle(reminder))
-            }
+            },
+            globalReminder = globalReminder
         )
 
-        if (state.reminderEnabled) {
-            ReminderDaysField(
-                value = state.reminderDays,
-                onValueChange = { reminderDays ->
-                    onEvent(EditSubscriptionEvent.ReminderDaysChanged(reminderDays))
-                }
-            )
-        }
+        ReminderDaysField(
+            value = state.reminderDays,
+            onValueChange = { reminderDays ->
+                onEvent(EditSubscriptionEvent.ReminderDaysChanged(reminderDays))
+            },
+            globalReminder = globalReminder,
+            reminderEnabled = state.reminderEnabled
+        )
+
 
         SaveEditButton(
             onSave = {
@@ -282,7 +286,8 @@ fun SubscriptionNameField(
 @Composable
 fun PriceField(
     value: String,
-    onValueChange: (String) -> Unit
+    onValueChange: (String) -> Unit,
+    currency: String
 ) {
     Row(modifier = Modifier.padding(16.dp)) {
         Column {
@@ -297,7 +302,7 @@ fun PriceField(
                 textStyle = TextStyle(fontSize = 17.sp),
                 suffix = {
                     Text(
-                        "€",
+                        text = currency,
                         color = Color.Gray,
                         fontSize = 18.sp,
                     )
@@ -531,9 +536,10 @@ fun SharedWithField(
 @Composable
 fun ReminderToggle(
     enabled: Boolean,
-    onToggle: (Boolean) -> Unit
+    onToggle: (Boolean) -> Unit,
+    globalReminder: Boolean
 ) {
-    Row(modifier = Modifier.padding(16.dp)) {
+    Row(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 6.dp)) {
         Row(
             modifier = Modifier
                 .background(
@@ -560,7 +566,8 @@ fun ReminderToggle(
                     uncheckedTrackColor = Color.LightGray,
                     uncheckedBorderColor = Color.Transparent
                 ),
-                modifier = Modifier.scale(scaleX = 0.85f, scaleY = 0.75f)
+                modifier = Modifier.scale(scaleX = 0.85f, scaleY = 0.75f),
+                enabled = globalReminder
             )
         }
     }
@@ -569,40 +576,53 @@ fun ReminderToggle(
 @Composable
 fun ReminderDaysField(
     value: String,
-    onValueChange: (String) -> Unit
+    onValueChange: (String) -> Unit,
+    globalReminder: Boolean,
+    reminderEnabled: Boolean
 ) {
-    Row(modifier = Modifier.padding(16.dp)) {
-        Column {
+    if (!globalReminder) {
+        Row() {
             Text(
-                text = "Remind me how many days before?",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
+                "Cannot enable while global reminders are off. Go to settings and enable Default Reminders to change this.",
+                modifier = Modifier.padding(start = 22.dp, bottom = 20.dp),
+                fontSize = 14.sp,
+                color = Color(0xFF4A5565)
             )
-            OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
-                textStyle = TextStyle(fontSize = 17.sp),
-                modifier = Modifier
-                    .padding(5.dp)
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = 46.dp),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                ),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF5B7FBD),
-                    unfocusedBorderColor = Color(0xFFD1D5DC),
-                    unfocusedContainerColor = Color(0xFFF9FAFB),
-                    focusedContainerColor = Color(0xFFF9FAFB)
-                ),
-                shape = RoundedCornerShape(10.dp),
-            )
-            Text(
-                text = "You'll be notified $value days before the next charge",
-                fontSize = 12.sp,
-                color = Color.LightGray,
-                modifier = Modifier.padding(start = 8.dp)
-            )
+        }
+    } else if(reminderEnabled) {
+        Row(modifier = Modifier.padding(16.dp)) {
+            Column {
+                Text(
+                    text = "Remind me how many days before?",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    textStyle = TextStyle(fontSize = 17.sp),
+                    modifier = Modifier
+                        .padding(5.dp)
+                        .fillMaxWidth()
+                        .defaultMinSize(minHeight = 46.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number
+                    ),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF5B7FBD),
+                        unfocusedBorderColor = Color(0xFFD1D5DC),
+                        unfocusedContainerColor = Color(0xFFF9FAFB),
+                        focusedContainerColor = Color(0xFFF9FAFB)
+                    ),
+                    shape = RoundedCornerShape(10.dp),
+                )
+                Text(
+                    text = "You'll be notified $value days before the next charge",
+                    fontSize = 12.sp,
+                    color = Color.LightGray,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
         }
     }
 }

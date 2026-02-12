@@ -34,6 +34,10 @@ class SubscriptionRepository(
         return dao.observeSubscriptionById(id)
     }
 
+    suspend fun deleteAllSubscriptions(){
+        dao.deleteAllSubscriptions()
+    }
+
     suspend fun seedDummyData() {
         val dummySubscriptions = listOf(
             Subscription(

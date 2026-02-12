@@ -1,18 +1,20 @@
-package com.app.payloop.ui.mainscreen
+package com.app.payloop.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.app.payloop.data.repository.SettingsRepository
 import com.app.payloop.data.repository.SubscriptionRepository
+import com.app.payloop.ui.editsubscription.EditSubscriptionViewModel
 
-class MainScreenViewModelFactory(
-    private val repository: SubscriptionRepository,
-    private val settingsRepository: SettingsRepository
+
+class SettingsViewModelFactory(
+    private val repository: SettingsRepository,
+    private val subscriptionRepository: SubscriptionRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MainScreenViewModel::class.java)) {
+        if (modelClass.isAssignableFrom(SettingsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MainScreenViewModel(repository, settingsRepository) as T
+            return SettingsViewModel(repository, subscriptionRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

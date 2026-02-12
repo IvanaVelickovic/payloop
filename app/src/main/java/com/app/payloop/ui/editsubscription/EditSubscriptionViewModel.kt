@@ -2,6 +2,7 @@ package com.app.payloop.ui.editsubscription
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.payloop.data.repository.SettingsRepository
 import com.app.payloop.data.repository.SubscriptionRepository
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionState
@@ -12,6 +13,7 @@ import kotlinx.coroutines.launch
 
 class EditSubscriptionViewModel(
     private val repository: SubscriptionRepository,
+    private val settingsRepository: SettingsRepository,
     private val subscriptionId: Long
 ) : ViewModel() {
 
@@ -20,6 +22,8 @@ class EditSubscriptionViewModel(
 
     init{
         loadSubscription(subscriptionId)
+        loadCurrency()
+        loadGlobalReminder()
     }
 
     fun onEvent(event: EditSubscriptionEvent) {
@@ -114,6 +118,21 @@ class EditSubscriptionViewModel(
         }
     }
 
+    private fun loadCurrency() {
+        viewModelScope.launch {
+            settingsRepository.getCurrency().collect { currency ->
+                _state.value = _state.value.copy(currency = currency)
+            }
+        }
+    }
+
+    private fun loadGlobalReminder() {
+        viewModelScope.launch {
+            settingsRepository.getReminder().collect { reminder ->
+                _state.value = _state.value.copy(globalReminder = reminder)
+            }
+        }
+    }
 
     private fun saveEditChanges(){
         viewModelScope.launch {

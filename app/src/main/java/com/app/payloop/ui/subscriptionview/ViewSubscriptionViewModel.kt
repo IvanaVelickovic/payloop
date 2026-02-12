@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.app.payloop.data.local.SubscriptionDao
 import com.app.payloop.data.model.FrequencyUnit
 import com.app.payloop.data.model.Subscription
+import com.app.payloop.data.repository.SettingsRepository
 import com.app.payloop.data.repository.SubscriptionRepository
 import com.app.payloop.settings.ViewSubscriptionScreen
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionState
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 
 class ViewSubscriptionViewModel(
     private val repository: SubscriptionRepository,
+    private val settingsRepository: SettingsRepository,
     private val subscriptionId: Long
 ) : ViewModel() {
 
@@ -32,6 +34,8 @@ class ViewSubscriptionViewModel(
                     }
                 }
         }
+        loadCurrency()
+        loadGlobalReminder()
     }
 
     fun onEvent(event: ViewSubscriptionEvent) {
@@ -80,6 +84,22 @@ class ViewSubscriptionViewModel(
                     )
                 }
 
+        }
+    }
+
+    private fun loadCurrency() {
+        viewModelScope.launch {
+            settingsRepository.getCurrency().collect { currency ->
+                _state.value = _state.value.copy(currency = currency)
+            }
+        }
+    }
+
+    private fun loadGlobalReminder() {
+        viewModelScope.launch {
+            settingsRepository.getReminder().collect { reminder ->
+                _state.value = _state.value.copy(globalReminder = reminder)
+            }
         }
     }
 

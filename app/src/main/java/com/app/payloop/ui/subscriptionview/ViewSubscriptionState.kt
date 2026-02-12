@@ -5,5 +5,7 @@ import com.app.payloop.data.model.Subscription
 data class ViewSubscriptionState (
     val subscription: Subscription? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val currency : String = "€",
+    val globalReminder : Boolean = true
 )

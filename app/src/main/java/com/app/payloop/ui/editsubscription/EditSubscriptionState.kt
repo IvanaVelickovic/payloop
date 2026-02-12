@@ -28,6 +28,9 @@ data class EditSubscriptionState (
     val isLoading: Boolean = false,
     val error: String? = null,
 
-    val isSaved: Boolean = false
+    val isSaved: Boolean = false,
+
+    val currency: String = "€",
+    val globalReminder : Boolean = true
 
 )

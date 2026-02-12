@@ -54,7 +54,10 @@ fun MainScreen(
     navController: NavController,
     //onEvent: (MainScreenEvent) -> Unit = {}
 ) {
-   // val state by viewModel.state.collectAsState()
+    val currency = state.currency
+    val globalReminder = state.globalReminder
+
+    val numOfSubscriptions = state.subscriptions.size
 
     Scaffold(
         floatingActionButton = {
@@ -120,7 +123,12 @@ fun MainScreen(
                     modifier = Modifier
                         .height(30.dp)
                         .width(30.dp)
-                )
+                        .clickable(onClick = {
+                            navController.navigate(
+                                NavRoutes.Settings.route
+                            )
+                        }),
+                    )
             }
 
             // Scrollable content
@@ -136,12 +144,14 @@ fun MainScreen(
             ) {
                 // Summary card
                 item {
-                    SummaryCard()
+                    SummaryCard(currency, numOfSubscriptions, state.monthlyCost, state.hoursWorked)
                 }
 
                 // Subscription cards
                 items(items = state.subscriptions) { subscription ->
                     SubscriptionCard(subscription = subscription,
+                        currency = currency,
+                        globalReminder = globalReminder,
                         onClick = {
                             navController.navigate(
                                 NavRoutes.ViewSubscription.createRoute(subscription.id.toLong())
@@ -158,7 +168,10 @@ fun MainScreen(
 }
 
 @Composable
-fun SummaryCard() {
+fun SummaryCard(currency : String,
+                numOfSubscriptions : Int,
+                monthlyCost: Double,
+                hoursWorked: Double) {
     Column(
         modifier = Modifier
             .background(
@@ -181,7 +194,7 @@ fun SummaryCard() {
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "3",
+                    text = numOfSubscriptions.toString(),
                     color = Color.White,
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
@@ -195,7 +208,7 @@ fun SummaryCard() {
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "28.67€",
+                    text = String.format("%.2f", monthlyCost) + currency,
                     color = Color.White,
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
@@ -211,7 +224,7 @@ fun SummaryCard() {
                 text = buildAnnotatedString {
                     append("You need to work ")
                     withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("1.1 hours/month ")
+                        append(String.format("%.1f", hoursWorked) + " hours/month ")
                     }
                     append("to cover these costs")
                 },
@@ -224,9 +237,11 @@ fun SummaryCard() {
 
 @Composable
 fun SubscriptionCard(subscription: Subscription,
+                     currency: String,
+                     globalReminder: Boolean,
                      onClick: () -> Unit) {
     val cardColor = subscription.color?.let { Color(it) } ?: Color.Gray
-    val reminderColor = if (subscription.isReminderEnabled) Color(0xFFFE9A00) else Color.LightGray
+    val reminderColor = if (subscription.isReminderEnabled && globalReminder) Color(0xFFFE9A00) else Color.LightGray
 
 
 
@@ -282,7 +297,7 @@ fun SubscriptionCard(subscription: Subscription,
                     modifier = Modifier.padding(bottom = 10.dp)
                 )
                 //hereeee
-                CardText(subscription = subscription)
+                CardText(subscription = subscription, currency = currency)
             }
 
             // Notification icon
@@ -304,7 +319,7 @@ fun SubscriptionCard(subscription: Subscription,
 }
 
 @Composable
-fun CardText(subscription: Subscription) {
+fun CardText(subscription: Subscription, currency: String) {
     val date = java.util.Date(subscription.nextChargeTimestamp * 1000)
     val formatter = java.text.SimpleDateFormat("MMM d, yyyy")
     val formattedDate = formatter.format(date)
@@ -332,7 +347,7 @@ fun CardText(subscription: Subscription) {
         )
     } else {
         Text(
-            text = "Every $frequency$frequencyUnit • ${subscription.price/100f}€",
+            text = "Every $frequency$frequencyUnit • ${subscription.price/100f}${currency}",
             color = Color(0xFF5B7FBD),
             fontWeight = FontWeight.Bold,
             fontSize = 14.sp,
@@ -354,17 +369,18 @@ fun CardText(subscription: Subscription) {
             modifier = Modifier.padding(bottom = 7.dp)
         )
     }
-    CardTag(subscription = subscription)
+    CardTag(subscription = subscription, currency = currency)
 }
 
 @Composable
-fun CardTag(subscription: Subscription){
+fun CardTag(subscription: Subscription,
+            currency: String){
     val sharedWith = if(subscription.sharedWith == 1) "person" else "people"
     val pricePerPerson =String.format("%.2f", subscription.price / 100f / (subscription.sharedWith + 1))
 
     if(subscription.isTrial) {
         Text(
-            text = "FREE TRIAL • ${subscription.price / 100f}€ after",
+            text = "FREE TRIAL • ${subscription.price / 100f}${currency} after",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = Color(0xFFBB4D00),
@@ -398,7 +414,7 @@ fun CardTag(subscription: Subscription){
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     Text(
-                        text = "Shared with ${subscription.sharedWith} ${sharedWith}•${pricePerPerson}€/person",
+                        text = "Shared with ${subscription.sharedWith} ${sharedWith}•${pricePerPerson}${currency}/person",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF364153),

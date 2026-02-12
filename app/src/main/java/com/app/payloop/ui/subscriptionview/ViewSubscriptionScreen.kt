@@ -74,6 +74,7 @@ fun ViewSubscriptionScreen(
         )
     }
 
+    val globarReminder = state.globalReminder
     val reminderEnabled = subscription.isReminderEnabled
 
     val date = java.util.Date(subscription.nextChargeTimestamp * 1000)
@@ -149,7 +150,7 @@ fun ViewSubscriptionScreen(
                 iconBackgroundColor = Color(0xFFE3EDFF),
                 iconTextColor = Color(0xFF5B7FBD),
                 label = "Price",
-                value = "${subscription.price/100f}€ • Every ${frequencyInterval}${frequency}",
+                value = "${subscription.price/100f}${state.currency} • Every ${frequencyInterval}${frequency}",
                 useTextIcon = true
             )
 
@@ -168,8 +169,19 @@ fun ViewSubscriptionScreen(
                 onEnabledChange = { newValue ->
                     onEvent(ViewSubscriptionEvent.ToggleReminder(newValue))
                 },
-                reminderDaysBefore = subscription.reminderDaysBefore
+                reminderDaysBefore = subscription.reminderDaysBefore,
+                globalReminder = globarReminder
             )
+
+            if(!globarReminder){
+                Row() {
+                    Text("Cannot enable while global reminders are off. Go to settings and enable Default Reminders to change this.",
+                        modifier = Modifier.padding(start = 22.dp),
+                        fontSize = 14.sp,
+                        color = Color(0xFF4A5565))
+                }
+            }
+
 
             // Action buttons
             ActionButtons(
@@ -301,7 +313,8 @@ fun SubscriptionDetailRow(
 fun ReminderRow(
     enabled: Boolean,
     onEnabledChange: (Boolean) -> Unit,
-    reminderDaysBefore : Int
+    reminderDaysBefore : Int,
+    globalReminder: Boolean
 ) {
     Row(
         modifier = Modifier
@@ -360,7 +373,8 @@ fun ReminderRow(
                 uncheckedTrackColor = Color.LightGray,
                 uncheckedBorderColor = Color.Transparent
             ),
-            modifier = Modifier.height(12.dp)
+            modifier = Modifier.height(12.dp),
+            enabled = globalReminder
         )
     }
 }
