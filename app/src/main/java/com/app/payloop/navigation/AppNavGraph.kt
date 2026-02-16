@@ -1,6 +1,8 @@
 package com.app.payloop.navigation
 
+import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -14,6 +16,7 @@ import androidx.navigation.navArgument
 import com.app.payloop.data.local.SettingsDataStore
 import com.app.payloop.data.repository.SettingsRepository
 import com.app.payloop.data.repository.SubscriptionRepository
+import com.app.payloop.navigation.NavRoutes.ViewSubscription.createRoute
 import com.app.payloop.settings.EditSubscriptionScreen
 import com.app.payloop.settings.ViewSubscriptionScreen
 import com.app.payloop.ui.editsubscription.EditSubscriptionViewModel
@@ -28,7 +31,8 @@ import com.app.payloop.ui.subscriptionview.ViewSubscriptionViewModel
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionViewModelFactory
 
 @Composable
-fun AppNavGraph(repository: SubscriptionRepository) {
+fun AppNavGraph(repository: SubscriptionRepository,
+                initialIntent: Intent? = null) {
 
     val navController = rememberNavController()
 
@@ -36,6 +40,17 @@ fun AppNavGraph(repository: SubscriptionRepository) {
     val settingsDataStore = remember { SettingsDataStore(context) }
     val settingsRepository = remember { SettingsRepository(settingsDataStore) }
 
+    LaunchedEffect(initialIntent) {
+        initialIntent?.let{intent ->
+            if(intent.getBooleanExtra("openViewScreen", false)){
+                val subscriptionId = intent.getLongExtra("subscriptionId", -1)
+                if(subscriptionId != -1L){
+                    val route = createRoute(subscriptionId)
+                    navController.navigate(route)
+                }
+            }
+        }
+    }
 
     NavHost(
         navController = navController,

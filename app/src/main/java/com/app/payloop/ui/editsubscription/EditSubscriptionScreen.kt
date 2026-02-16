@@ -24,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -122,6 +123,17 @@ fun EditSubscriptionScreen(
             }
         )
 
+        Toggle(
+            type = "Free Trial",
+            enabled = state.isTrial,
+            onToggle = { isTrial ->
+                onEvent(EditSubscriptionEvent.IsTrialToggle(isTrial))
+            },
+            globalReminder = globalReminder
+        )
+
+        CustomDivider()
+
         PriceField(
             value = state.price,
             onValueChange = { newPrice ->
@@ -129,6 +141,17 @@ fun EditSubscriptionScreen(
             },
             currency = currency
         )
+
+        Toggle(
+            type = "Manual payment",
+            enabled = state.isManual,
+            onToggle = { isManual ->
+                onEvent(EditSubscriptionEvent.IsManualToggle(isManual))
+            },
+            globalReminder = globalReminder
+        )
+
+        CustomDivider()
 
         FrequencySection(
             options = frequencyOptions,
@@ -153,10 +176,14 @@ fun EditSubscriptionScreen(
             }
         )
 
+        CustomDivider()
+
         NextChargeDateField(
             selectedDate = selectedDate,
             onDateClick = { showDatePicker = true }
         )
+
+        CustomDivider()
 
         SharedWithField(
             value = state.peopleCount,
@@ -165,7 +192,10 @@ fun EditSubscriptionScreen(
             }
         )
 
-        ReminderToggle(
+        CustomDivider()
+
+        Toggle(
+            type = "Reminder",
             enabled = state.reminderEnabled,
             onToggle = { reminder ->
                 onEvent(EditSubscriptionEvent.ReminderToggle(reminder))
@@ -503,7 +533,7 @@ fun SharedWithField(
     value: String,
     onValueChange: (String) -> Unit
 ) {
-    Row(modifier = Modifier.padding(16.dp)) {
+    Row(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp)) {
         Column {
             Text(
                 text = "Shared with (number of people)",
@@ -534,12 +564,14 @@ fun SharedWithField(
 }
 
 @Composable
-fun ReminderToggle(
+fun Toggle(
+    type: String,
     enabled: Boolean,
     onToggle: (Boolean) -> Unit,
     globalReminder: Boolean
 ) {
-    Row(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 6.dp)) {
+    Row(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = if(type == "Reminder") 16.dp else 2.dp,
+        bottom = if(type == "Reminder") 4.dp else 16.dp)) {
         Row(
             modifier = Modifier
                 .background(
@@ -552,7 +584,7 @@ fun ReminderToggle(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Reminder",
+                text = type,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -567,7 +599,7 @@ fun ReminderToggle(
                     uncheckedBorderColor = Color.Transparent
                 ),
                 modifier = Modifier.scale(scaleX = 0.85f, scaleY = 0.75f),
-                enabled = globalReminder
+                enabled = if(type == "Reminder") globalReminder else true
             )
         }
     }
@@ -648,4 +680,11 @@ fun SaveEditButton(
             fontSize = 17.sp
         )
     }
+}
+
+@Composable
+fun CustomDivider(){
+     Divider(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+        .height(2.dp),
+        color = Color.LightGray)
 }

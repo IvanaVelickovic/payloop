@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.People
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -91,6 +92,9 @@ fun ViewSubscriptionScreen(
     if (subscription.frequencyInterval > 1) frequency = frequency + "s"
     val frequencyInterval = if (subscription.frequencyInterval == 1) "" else subscription.frequencyInterval.toString() + " "
 
+    val pricePerPerson =String.format("%.2f", subscription.price / 100f / (subscription.sharedWith + 1))
+    val sharedWith = if(subscription.sharedWith == 1) "person" else "people"
+
 
     Box(
         modifier = Modifier
@@ -159,9 +163,20 @@ fun ViewSubscriptionScreen(
                 icon = Icons.Outlined.DateRange,
                 iconBackgroundColor = Color(0xFFE3EDFF),
                 iconTint = Color(0xFF5B7FBD),
-                label = "Next charge",
+                label = if (subscription.isTrial) "Free trial ends on" else "Next charge",
                 value = formattedDate
             )
+
+            if(subscription.sharedWith > 0){
+                //Shared with
+                SubscriptionDetailRow(
+                    icon = Icons.Outlined.People,
+                    iconBackgroundColor = Color(0xFFE3EDFF),
+                    iconTint = Color(0xFF5B7FBD),
+                    label = "Shared with ${subscription.sharedWith} $sharedWith",
+                    value = "${pricePerPerson}${state.currency} per person"
+                )
+            }
 
             //Reminder
             ReminderRow(
@@ -240,8 +255,36 @@ fun SubscriptionHeader(subscription: Subscription) {
                 text = subscription.name,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(bottom = 10.dp, top = 4.dp)
+                modifier = Modifier.padding(bottom = 2.dp, top = 2.dp)
             )
+            if(subscription.isTrial) {
+                Text(
+                    text = "FREE TRIAL",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFFBB4D00),
+                    modifier = Modifier
+                        .background(
+                            Color(0xFFFEF3C6),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 1.dp)
+                )
+            }
+            else if(subscription.isManual){
+                Text(
+                    text = "PAY YOURSELF",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF1447E6),
+                    modifier = Modifier
+                        .background(
+                            Color(0xFFDBEAFE),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .padding(horizontal = 8.dp, vertical = 1.dp)
+                )
+            }
         }
     }
 }
@@ -316,6 +359,7 @@ fun ReminderRow(
     reminderDaysBefore : Int,
     globalReminder: Boolean
 ) {
+    val frequency = if(reminderDaysBefore == 1) "day" else "days"
     Row(
         modifier = Modifier
             .padding(start = 16.dp, end = 16.dp, top = 12.dp)
@@ -355,7 +399,7 @@ fun ReminderRow(
                     color = Color(0xFF4A5565)
                 )
                 Text(
-                    text = "${reminderDaysBefore} days before",
+                    text = "${reminderDaysBefore} $frequency before",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(top = 4.dp)

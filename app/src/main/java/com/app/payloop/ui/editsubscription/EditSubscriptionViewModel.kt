@@ -56,6 +56,18 @@ class EditSubscriptionViewModel(
                 }
             }
 
+            is EditSubscriptionEvent.IsTrialToggle -> {
+                _state.update {
+                    it.copy(isTrial = event.enabled)
+                }
+            }
+
+            is EditSubscriptionEvent.IsManualToggle -> {
+                _state.update {
+                    it.copy(isManual = event.enabled)
+                }
+            }
+
             is EditSubscriptionEvent.ReminderToggle -> {
                 _state.update {
                     it.copy(reminderEnabled = event.enabled)
@@ -95,6 +107,8 @@ class EditSubscriptionViewModel(
                         price = (sub.price / 100f).toString(),
                         peopleCount = sub.sharedWith.toString(),
                         selectedFrequency = sub.frequencyUnit,
+                        isTrial = sub.isTrial,
+                        isManual = sub.isManual,
                         customFrequencyValue = sub.frequencyInterval.toString(),
                         customFrequencyEnabled = if (sub.frequencyInterval != 1) true else false,
                         reminderEnabled = sub.isReminderEnabled,
@@ -172,6 +186,8 @@ class EditSubscriptionViewModel(
                     sharedWith = currentState.peopleCount.toIntOrNull() ?: 0,
                     frequencyUnit = currentState.selectedFrequency,
                     frequencyInterval = currentState.customFrequencyValue.toIntOrNull() ?: 1,
+                    isTrial = currentState.isTrial,
+                    isManual = currentState.isManual,
                     isReminderEnabled = currentState.reminderEnabled,
                     reminderDaysBefore = currentState.reminderDays.toIntOrNull() ?: 1,
                     nextChargeTimestamp = currentState.selectedDateTimestamp ?: originalSub.nextChargeTimestamp

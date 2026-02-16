@@ -1,5 +1,6 @@
 package com.app.payloop.data.repository
 
+import android.content.Context
 import androidx.compose.runtime.collectAsState
 import com.app.payloop.data.local.SubscriptionDao
 import com.app.payloop.data.model.FrequencyUnit
@@ -11,7 +12,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 class SubscriptionRepository(
-    private val dao: SubscriptionDao
+    private val dao: SubscriptionDao,
+    private val context: Context
 ) {
 
     fun getAllSubscriptions(): Flow<List<Subscription>> {
@@ -24,10 +26,12 @@ class SubscriptionRepository(
 
     suspend fun insertSubscription(subscription: Subscription) {
         dao.insertSubscription(subscription)
+        NotificationScheduler(context).scheduleReminder(subscription)
     }
 
     suspend fun updateSubscription(subscription: Subscription) {
         dao.updateSubscription(subscription)
+        NotificationScheduler(context).scheduleReminder(subscription)
     }
 
     suspend fun deleteSubscription(subscription: Subscription) {
@@ -95,7 +99,7 @@ class SubscriptionRepository(
                 name = "Netflix",
                 price = 1299,
                 isTrial = false,
-                nextChargeTimestamp = 1707158400,
+                nextChargeTimestamp = 1772841600,
                 isReminderEnabled = true,
                 reminderDaysBefore = 3,
                 sharedWith = 1,
@@ -109,7 +113,7 @@ class SubscriptionRepository(
                 name = "Spotify",
                 price = 999,
                 isTrial = true,
-                nextChargeTimestamp = 1707926400,
+                nextChargeTimestamp = 1771622400,
                 isReminderEnabled = false,
                 reminderDaysBefore = 0,
                 sharedWith = 2,
@@ -122,8 +126,8 @@ class SubscriptionRepository(
             Subscription(
                 name = "Disney+",
                 price = 899,
-                isTrial = false,
-                nextChargeTimestamp = 1708540800,
+                isTrial = true,
+                nextChargeTimestamp = 1778889600,
                 isReminderEnabled = true,
                 reminderDaysBefore = 2,
                 sharedWith = 0,
@@ -137,7 +141,7 @@ class SubscriptionRepository(
                 name = "Amazon prime",
                 price = 1199,
                 isTrial = false,
-                nextChargeTimestamp = 1708540800,
+                nextChargeTimestamp = 1771363200,
                 isReminderEnabled = false,
                 reminderDaysBefore = 2,
                 sharedWith = 0,

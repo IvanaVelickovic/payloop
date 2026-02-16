@@ -31,6 +31,9 @@ data class EditSubscriptionState (
     val isSaved: Boolean = false,
 
     val currency: String = "€",
-    val globalReminder : Boolean = true
+    val globalReminder : Boolean = true,
+
+    val isTrial : Boolean = false,
+    val isManual : Boolean = false
 
 )
