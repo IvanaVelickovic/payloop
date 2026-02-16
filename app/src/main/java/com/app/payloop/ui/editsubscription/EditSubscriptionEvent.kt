@@ -15,6 +15,10 @@ sealed class EditSubscriptionEvent {
 
     data class CustomFrequencyValueChanged(val value: String) : EditSubscriptionEvent()
 
+    data class IsTrialToggle(val enabled: Boolean) : EditSubscriptionEvent()
+
+    data class IsManualToggle(val enabled: Boolean) : EditSubscriptionEvent()
+
     data class ReminderToggle(val enabled: Boolean) : EditSubscriptionEvent()
 
     data class ReminderDaysChanged(val days: String) : EditSubscriptionEvent()
