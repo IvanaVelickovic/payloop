@@ -2,6 +2,7 @@ package com.app.payloop.ui.settings
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
@@ -33,6 +35,8 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,13 +52,31 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import com.app.payloop.settings.DeleteConfirmationDialog
+import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
 
 @Composable
-fun SettingsScreen() {
-    var hourlyWage by remember { mutableStateOf("") }
+fun SettingsScreen(
+    viewModel: SettingsViewModel,
+    navController: NavController,
+) {
+    val hourlyWage by viewModel.hourlyWage.collectAsState()
     val currencyOptions = listOf("€", "$", "£", "¥")
-    var selectedCurrency by remember { mutableStateOf(currencyOptions[0]) }
-    var notificationsEnabled by remember { mutableStateOf(false) }
+    val selectedCurrency by viewModel.currency.collectAsState()
+    val notificationsEnabled by viewModel.reminderOn.collectAsState()
+
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        DeleteConfirmationDialog(
+            onConfirm = {
+                viewModel.deleteAll()
+                showDeleteDialog = false
+            },
+            onDismiss = { showDeleteDialog = false }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -74,7 +96,7 @@ fun SettingsScreen() {
             modifier = Modifier
                 .background(Color(0xFF5B7FBD))
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 16.dp)
                 .height(36.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -86,6 +108,9 @@ fun SettingsScreen() {
                     .height(38.dp)
                     .width(38.dp)
                     .padding(end = 8.dp)
+                    .clickable{
+                        navController.popBackStack()
+                    }
             )
             Text(
                 text = "Settings",
@@ -103,30 +128,36 @@ fun SettingsScreen() {
         ) {
             // Hourly wage section
             HourlyWageSection(
-                value = hourlyWage,
-                onValueChange = { hourlyWage = it }
+                value = if (hourlyWage == 0.0) "" else hourlyWage.toString(),
+                onValueChange = { newValue ->
+                    val doubleValue = newValue.toDoubleOrNull() ?: 0.0
+                    viewModel.updateHourlyWage(doubleValue)
+                },
+                selectedCurrency = selectedCurrency
             )
 
             // Currency selection section
             CurrencySelectionSection(
                 options = currencyOptions,
                 selectedOption = selectedCurrency,
-                onOptionSelected = { selectedCurrency = it }
+                onOptionSelected = { viewModel.updateCurrency(it) }
             )
 
             // Notifications section
             NotificationsSection(
                 enabled = notificationsEnabled,
-                onEnabledChange = { notificationsEnabled = it }
+                onEnabledChange = { viewModel.updateReminder(it) }
             )
 
             // Save button
-            SaveButton()
+            //SaveButton()
 
             Divider()
 
             // Danger zone section
-            DangerZoneSection()
+            DangerZoneSection(onClick = {
+                showDeleteDialog = true
+            })
         }
     }
 }
@@ -134,8 +165,16 @@ fun SettingsScreen() {
 @Composable
 fun HourlyWageSection(
     value: String,
-    onValueChange: (String) -> Unit
+    onValueChange: (String) -> Unit,
+    selectedCurrency : String
 ) {
+    var textInput by remember { mutableStateOf(value) }
+
+    // Sync initial value
+    LaunchedEffect(value) {
+        textInput = value
+    }
+
     Row(modifier = Modifier.padding(16.dp)) {
         Column {
             Text(
@@ -155,9 +194,26 @@ fun HourlyWageSection(
                 fontSize = 14.sp
             )
             OutlinedTextField(
-                value = value,
-                onValueChange = onValueChange,
+                value = textInput,
+                onValueChange = { newValue ->
+                    // samo brojevi i jedna decimalna točka
+                    if (newValue.isEmpty() || newValue.matches(Regex("^\\d*\\.?\\d*$"))) {
+                        textInput = newValue
+
+                        newValue.toDoubleOrNull()?.let { validNumber ->
+                            onValueChange(newValue)
+                        } ?: run {
+                            // za prazan string, spremi 0
+                            if (newValue.isEmpty()) {
+                                onValueChange("0")
+                            }
+                        }
+                    }
+                },
                 textStyle = TextStyle(fontSize = 18.sp),
+                placeholder = {  // ⬅️ DODAJ PLACEHOLDER
+                    Text("0.00", color = Color.Gray)
+                },
                 modifier = Modifier
                     .padding(2.dp)
                     .fillMaxWidth(),
@@ -170,7 +226,7 @@ fun HourlyWageSection(
                 },
                 suffix = {
                     Text(
-                        "€/h",
+                        "${selectedCurrency}/h",
                         color = Color.Gray,
                         fontSize = 18.sp,
                     )
@@ -254,7 +310,7 @@ fun NotificationsSection(
     enabled: Boolean,
     onEnabledChange: (Boolean) -> Unit
 ) {
-    Row(modifier = Modifier.padding(18.dp)) {
+    Row(modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 36.dp)) {
         Column {
             Row {
                 Icon(
@@ -303,6 +359,14 @@ fun NotificationsSection(
                     modifier = Modifier.height(12.dp)
                 )
             }
+
+            Row() {
+                Text("Disabling this will turn off all notifications across the app.",
+                    color = Color(0xFF4A5565),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp
+                    ),
+                    fontSize = 14.sp)
+            }
         }
     }
 }
@@ -335,7 +399,9 @@ fun SaveButton() {
 }
 
 @Composable
-fun DangerZoneSection() {
+fun DangerZoneSection(
+    onClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -361,7 +427,7 @@ fun DangerZoneSection() {
                 )
             }
             OutlinedButton(
-                onClick = {},
+                onClick = onClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp, horizontal = 20.dp)
@@ -387,4 +453,47 @@ fun DangerZoneSection() {
             )
         }
     }
+}
+
+
+@Composable
+fun DeleteConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Delete All Subscriptions?",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Text("Are you sure you want to delete all subscriptions? This action is permanent and cannot be undone.")
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFC10007)
+                )
+            ) {
+                Text("Delete", color = Color.White)
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFF3F4F6),
+                    contentColor = Color(0xFF4A5565)
+                )
+            ) {
+                Text("Cancel")
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
 }
