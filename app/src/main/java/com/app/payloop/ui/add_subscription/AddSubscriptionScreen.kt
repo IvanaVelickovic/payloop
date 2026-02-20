@@ -6,22 +6,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.app.payloop.data.local.AppDatabase
 
 @Composable
 fun AddSubscriptionScreen(
-    onNavigateBack: () -> Unit,
+    viewModel: AddSubscriptionViewModel,
+    navController: NavController,
 ) {
-    val context = LocalContext.current
-    val database = remember(context) { AppDatabase.getDatabase(context.applicationContext) }
-    val factory = remember(database) { AddSubscriptionViewModelFactory(database.subscriptionDao()) }
-    val viewModel: AddSubscriptionViewModel = viewModel(factory = factory)
     val state by viewModel.uiState.collectAsState()
 
     AddSubscriptionFlowScreen(
         state = state,
         onEvent = viewModel::onEvent,
-        onSubmit = { viewModel.submit(onSuccess = onNavigateBack) },
-        onNavigateBack = onNavigateBack,
+        onSubmit = { viewModel.submit(onSuccess = { navController.popBackStack() }) },
+        onNavigateBack = { navController.popBackStack() },
     )
 }

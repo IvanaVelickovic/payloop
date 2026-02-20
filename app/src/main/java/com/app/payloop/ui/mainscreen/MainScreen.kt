@@ -62,7 +62,9 @@ fun MainScreen(
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* navigate */ },
+                onClick = { navController.navigate(
+                    NavRoutes.AddSubscription.route
+                ) },
                 containerColor = Color(0xFF5B7FBD),
                 shape = RoundedCornerShape(26.dp),
                 modifier = Modifier.height(48.dp)
@@ -240,7 +242,7 @@ fun SubscriptionCard(subscription: Subscription,
                      currency: String,
                      globalReminder: Boolean,
                      onClick: () -> Unit) {
-    val cardColor = subscription.color?.let { Color(it) } ?: Color.Gray
+    val cardColor = subscription.color?.let { Color(it) } ?: Color(0xFFADD8E6)
     val reminderColor = if (subscription.isReminderEnabled && globalReminder) Color(0xFFFE9A00) else Color.LightGray
 
 
@@ -266,9 +268,9 @@ fun SubscriptionCard(subscription: Subscription,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = subscription.name.first().toString(),
+                    text = if(subscription.icon != "") subscription.icon else subscription.name.first().toString(),
                     color = Color.White,
-                    fontSize = 22.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -327,7 +329,7 @@ fun CardText(subscription: Subscription, currency: String) {
     val frequency = if(subscription.frequencyInterval == 1) "" else subscription.frequencyInterval.toString() + " "
     val frequencyUnit = if(frequency == "") subscription.frequencyUnit.toString().lowercase() else subscription.frequencyUnit.toString().lowercase() + "s"
 
-
+    val price = if(subscription.price/100f == 0f) "" else "• ${subscription.price/100f}${currency}"
 
     if(subscription.isTrial){
         Text(
@@ -347,7 +349,7 @@ fun CardText(subscription: Subscription, currency: String) {
         )
     } else {
         Text(
-            text = "Every $frequency$frequencyUnit • ${subscription.price/100f}${currency}",
+            text = "Every $frequency$frequencyUnit ${price}",
             color = Color(0xFF5B7FBD),
             fontWeight = FontWeight.Bold,
             fontSize = 14.sp,

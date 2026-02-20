@@ -9,4 +9,6 @@ sealed class NavRoutes(val route: String) {
         fun createRoute(subscriptionId: Long) = "view_subscription/$subscriptionId"
     }
     object Settings : NavRoutes("settings")
+
+    object AddSubscription : NavRoutes("add_subscription")
 }

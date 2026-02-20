@@ -2,9 +2,9 @@ package com.app.payloop.ui.add_subscription
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.payloop.data.local.SubscriptionDao
 import com.app.payloop.data.model.FrequencyUnit
 import com.app.payloop.data.model.Subscription
+import com.app.payloop.data.repository.SubscriptionRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -14,7 +14,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeParseException
 
 class AddSubscriptionViewModel(
-    private val subscriptionDao: SubscriptionDao,
+    private val subscriptionRepository: SubscriptionRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SubscriptionUiState())
@@ -81,7 +81,7 @@ class AddSubscriptionViewModel(
 
         viewModelScope.launch {
             runCatching {
-                subscriptionDao.insertSubscription(
+                subscriptionRepository.insertSubscription(
                     Subscription(
                         name = state.name.trim(),
                         price = toPriceInCents(

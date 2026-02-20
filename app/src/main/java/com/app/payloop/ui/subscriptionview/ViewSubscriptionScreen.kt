@@ -153,8 +153,9 @@ fun ViewSubscriptionScreen(
                 icon = "$",
                 iconBackgroundColor = Color(0xFFE3EDFF),
                 iconTextColor = Color(0xFF5B7FBD),
-                label = "Price",
-                value = "${subscription.price/100f}${state.currency} • Every ${frequencyInterval}${frequency}",
+                label = if(subscription.price != 0L) "Price" else "Frequency",
+                value = if(subscription.price != 0L) "${subscription.price/100f}${state.currency} • Every ${frequencyInterval}${frequency}"
+                else "Every ${frequencyInterval}${frequency}",
                 useTextIcon = true
             )
 

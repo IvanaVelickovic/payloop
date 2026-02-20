@@ -26,7 +26,7 @@ class MainScreenViewModel(
 
     init {
         viewModelScope.launch {
-            seedDatabase()
+            //seedDatabase()
             repository.refreshExpiredSubscriptions()
             insertCurrencyIfNotExists()
         }
@@ -59,9 +59,9 @@ class MainScreenViewModel(
         }
     }
 
-    private suspend fun seedDatabase() {
+    /*private suspend fun seedDatabase() {
         repository.seedDummyData()
-    }
+    } */
 
     private fun insertCurrencyIfNotExists(){
         viewModelScope.launch {

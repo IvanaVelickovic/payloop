@@ -19,6 +19,9 @@ import com.app.payloop.data.repository.SubscriptionRepository
 import com.app.payloop.navigation.NavRoutes.ViewSubscription.createRoute
 import com.app.payloop.settings.EditSubscriptionScreen
 import com.app.payloop.settings.ViewSubscriptionScreen
+import com.app.payloop.ui.add_subscription.AddSubscriptionScreen
+import com.app.payloop.ui.add_subscription.AddSubscriptionViewModel
+import com.app.payloop.ui.add_subscription.AddSubscriptionViewModelFactory
 import com.app.payloop.ui.editsubscription.EditSubscriptionViewModel
 import com.app.payloop.ui.editsubscription.EditSubscriptionViewModelFactory
 import com.app.payloop.ui.mainscreen.MainScreen
@@ -130,6 +133,18 @@ fun AppNavGraph(repository: SubscriptionRepository,
                     viewModel.onEvent(event)
                 }
             )
+        }
+
+        composable(NavRoutes.AddSubscription.route) {
+            val viewModel : AddSubscriptionViewModel = viewModel (
+                factory = AddSubscriptionViewModelFactory(repository)
+            )
+
+            AddSubscriptionScreen(
+                viewModel = viewModel,
+                navController = navController,
+            )
+
         }
 
 

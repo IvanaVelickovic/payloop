@@ -93,7 +93,7 @@ class SubscriptionRepository(
         return nextChargeDate.atStartOfDay(zone).toEpochSecond()
     }
 
-    suspend fun seedDummyData() {
+    /* suspend fun seedDummyData() {
         val dummySubscriptions = listOf(
             Subscription(
                 name = "Netflix",
@@ -158,5 +158,5 @@ class SubscriptionRepository(
             dummySubscriptions.forEach { insertSubscription(it) }
         }
 
-    }
+    } */
 }
