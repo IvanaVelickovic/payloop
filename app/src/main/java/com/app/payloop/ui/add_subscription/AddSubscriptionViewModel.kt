@@ -24,12 +24,23 @@ class AddSubscriptionViewModel(
         when (event) {
             AddSubscriptionEvent.OnNextStep -> {
                 _uiState.update { state ->
-                    state.copy(currentStep = (state.currentStep + 1).coerceAtMost(state.totalSteps))
+                    val stepError = validateCurrentStep(state)
+                    if (stepError == null) {
+                        state.copy(
+                            currentStep = (state.currentStep + 1).coerceAtMost(state.totalSteps),
+                            saveError = null,
+                        )
+                    } else {
+                        state.copy(saveError = stepError)
+                    }
                 }
             }
             AddSubscriptionEvent.OnPreviousStep -> {
                 _uiState.update { state ->
-                    state.copy(currentStep = (state.currentStep - 1).coerceAtLeast(1))
+                    state.copy(
+                        currentStep = (state.currentStep - 1).coerceAtLeast(1),
+                        saveError = null,
+                    )
                 }
             }
             is AddSubscriptionEvent.NameChanged -> _uiState.update { it.copy(name = event.value, saveError = null) }
@@ -43,9 +54,24 @@ class AddSubscriptionViewModel(
                 }
             }
             is AddSubscriptionEvent.FrequencyChanged -> _uiState.update { it.copy(frequency = event.value) }
-            is AddSubscriptionEvent.CustomMonthsChanged -> _uiState.update { it.copy(customMonths = event.value) }
+            is AddSubscriptionEvent.FrequencyIntervalChanged -> {
+                _uiState.update { it.copy(frequencyInterval = event.value) }
+            }
             is AddSubscriptionEvent.ManualPaymentChanged -> _uiState.update { it.copy(isManualPayment = event.value) }
             is AddSubscriptionEvent.NextChargeChanged -> _uiState.update { it.copy(nextCharge = event.value) }
+            is AddSubscriptionEvent.SharedSubscriptionChanged -> {
+                _uiState.update {
+                    it.copy(
+                        isSharedSubscription = event.value,
+                        sharedWith = if (event.value) {
+                            it.sharedWith.takeIf { value -> value.toIntOrNull()?.let { num -> num > 0 } == true } ?: "1"
+                        } else {
+                            "1"
+                        },
+                    )
+                }
+            }
+            is AddSubscriptionEvent.SharedWithChanged -> _uiState.update { it.copy(sharedWith = event.value) }
             is AddSubscriptionEvent.ReminderEnabledChanged -> _uiState.update { it.copy(reminderEnabled = event.value) }
             is AddSubscriptionEvent.ReminderDaysChanged -> _uiState.update { it.copy(reminderDays = event.value) }
             is AddSubscriptionEvent.PriceChanged -> _uiState.update { it.copy(price = event.value) }
@@ -98,13 +124,13 @@ class AddSubscriptionViewModel(
                             if (state.isTrial) state.trialReminderDays else state.reminderDays,
                             defaultValue = 3,
                         ),
-                        sharedWith = 0,
-                        frequencyUnit = toFrequencyUnit(state.frequency),
-                        frequencyInterval = if (state.frequency == BillingFrequency.CUSTOM) {
-                            toPositiveIntOrDefault(state.customMonths, 1)
+                        sharedWith = if (state.isSharedSubscription) {
+                            toPositiveIntOrDefault(state.sharedWith, 1)
                         } else {
-                            1
+                            0
                         },
+                        frequencyUnit = toFrequencyUnit(state.frequency),
+                        frequencyInterval = toPositiveIntOrDefault(state.frequencyInterval, 1),
                         isManual = if (state.isTrial) false else state.isManualPayment,
                         icon = state.emoji,
                         color = null,
@@ -142,13 +168,54 @@ class AddSubscriptionViewModel(
 
     private fun toFrequencyUnit(value: BillingFrequency): FrequencyUnit {
         return when (value) {
+            BillingFrequency.DAILY -> FrequencyUnit.DAY
+            BillingFrequency.WEEKLY -> FrequencyUnit.WEEK
             BillingFrequency.MONTHLY -> FrequencyUnit.MONTH
             BillingFrequency.YEARLY -> FrequencyUnit.YEAR
-            BillingFrequency.CUSTOM -> FrequencyUnit.MONTH
         }
     }
 
     private fun toPositiveIntOrDefault(value: String, defaultValue: Int): Int {
         return value.trim().toIntOrNull()?.takeIf { it > 0 } ?: defaultValue
+    }
+
+    private fun isPositiveInt(value: String): Boolean {
+        return value.trim().toIntOrNull()?.let { it > 0 } == true
+    }
+
+    private fun validateCurrentStep(state: SubscriptionUiState): String? {
+        if (state.currentStep == 1) {
+            if (state.name.isBlank()) return "Subscription name is required."
+            return null
+        }
+
+        if (state.isTrial && state.currentStep == 2) {
+            if (parseDateToEpoch(state.trialEndDate) == null) return "Please select a valid trial end date."
+            if (state.trialReminderEnabled && !isPositiveInt(state.trialReminderDays)) {
+                return "Trial reminder days must be greater than 0."
+            }
+            if (state.isSharedSubscription && !isPositiveInt(state.sharedWith)) {
+                return "Shared with must be greater than 0."
+            }
+            return null
+        }
+
+        if (!state.isTrial && state.currentStep == 2) {
+            if (!isPositiveInt(state.frequencyInterval)) return "Frequency interval must be greater than 0."
+            if (parseDateToEpoch(state.nextCharge) == null) return "Please select a valid next charge date."
+            return null
+        }
+
+        if (!state.isTrial && state.currentStep == 3) {
+            if (state.reminderEnabled && !isPositiveInt(state.reminderDays)) {
+                return "Reminder days must be greater than 0."
+            }
+            if (state.isSharedSubscription && !isPositiveInt(state.sharedWith)) {
+                return "Shared with must be greater than 0."
+            }
+            return null
+        }
+
+        return null
     }
 }

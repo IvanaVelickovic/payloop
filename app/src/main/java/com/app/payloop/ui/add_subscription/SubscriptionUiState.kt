@@ -1,9 +1,10 @@
 package com.app.payloop.ui.add_subscription
 
 enum class BillingFrequency {
+    DAILY,
+    WEEKLY,
     MONTHLY,
     YEARLY,
-    CUSTOM,
 }
 
 data class SubscriptionUiState(
@@ -12,9 +13,11 @@ data class SubscriptionUiState(
     val emoji: String = "",
     val isTrial: Boolean = false,
     val frequency: BillingFrequency = BillingFrequency.MONTHLY,
-    val customMonths: String = "",
+    val frequencyInterval: String = "1",
     val isManualPayment: Boolean = false,
     val nextCharge: String = "",
+    val isSharedSubscription: Boolean = false,
+    val sharedWith: String = "1",
     val reminderEnabled: Boolean = false,
     val reminderDays: String = "3",
     val price: String = "",

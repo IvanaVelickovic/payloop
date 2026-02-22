@@ -24,6 +24,9 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +37,13 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -51,7 +60,9 @@ import com.app.payloop.ui.theme.PayLoopDarkBlue
 import com.app.payloop.ui.theme.PayLoopSurface
 import com.app.payloop.ui.theme.TextPrimary
 import com.app.payloop.ui.theme.TextSecondary
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import java.util.Locale
@@ -60,6 +71,7 @@ private val inputShape = RoundedCornerShape(14.dp)
 private val cardShape = RoundedCornerShape(16.dp)
 private val emojiOptions = listOf("💰", "📺", "🎵", "☁️", "🎮", "📱", "💪", "🍕", "🚗", "📚", "✈️", "🏠")
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddSubscriptionFlowScreen(
     state: SubscriptionUiState,
@@ -67,6 +79,11 @@ fun AddSubscriptionFlowScreen(
     onSubmit: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
+    var showNextChargeDatePicker by remember { mutableStateOf(false) }
+    var showTrialEndDatePicker by remember { mutableStateOf(false) }
+    val nextChargeDatePickerState = rememberDatePickerState()
+    val trialEndDatePickerState = rememberDatePickerState()
+
     Scaffold(
         containerColor = PayLoopBackground,
         topBar = {
@@ -111,7 +128,62 @@ fun AddSubscriptionFlowScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            StepContent(state = state, onEvent = onEvent)
+            StepContent(
+                state = state,
+                onEvent = onEvent,
+                onNextChargeDateClick = { showNextChargeDatePicker = true },
+                onTrialEndDateClick = { showTrialEndDatePicker = true },
+            )
+        }
+    }
+
+    if (showNextChargeDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showNextChargeDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        nextChargeDatePickerState.selectedDateMillis?.let { millis ->
+                            onEvent(AddSubscriptionEvent.NextChargeChanged(millisToIsoDate(millis)))
+                        }
+                        showNextChargeDatePicker = false
+                    },
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNextChargeDatePicker = false }) {
+                    Text("Cancel")
+                }
+            },
+        ) {
+            DatePicker(state = nextChargeDatePickerState)
+        }
+    }
+
+    if (showTrialEndDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showTrialEndDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        trialEndDatePickerState.selectedDateMillis?.let { millis ->
+                            onEvent(AddSubscriptionEvent.TrialEndDateChanged(millisToIsoDate(millis)))
+                        }
+                        showTrialEndDatePicker = false
+                    },
+                ) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTrialEndDatePicker = false }) {
+                    Text("Cancel")
+                }
+            },
+        ) {
+            DatePicker(state = trialEndDatePickerState)
         }
     }
 }
@@ -206,12 +278,22 @@ private fun ProgressBar(currentStep: Int, totalSteps: Int) {
 private fun StepContent(
     state: SubscriptionUiState,
     onEvent: (AddSubscriptionEvent) -> Unit,
+    onNextChargeDateClick: () -> Unit,
+    onTrialEndDateClick: () -> Unit,
 ) {
     when {
         state.currentStep == 1 -> Step1NameLogoTrial(state, onEvent)
-        state.isTrial && state.currentStep == 2 -> Step2TrialDetails(state, onEvent)
+        state.isTrial && state.currentStep == 2 -> Step2TrialDetails(
+            state = state,
+            onEvent = onEvent,
+            onTrialEndDateClick = onTrialEndDateClick,
+        )
         state.isTrial && state.currentStep == 3 -> Step3TrialConfirmation(state)
-        !state.isTrial && state.currentStep == 2 -> Step2Frequency(state, onEvent)
+        !state.isTrial && state.currentStep == 2 -> Step2Frequency(
+            state = state,
+            onEvent = onEvent,
+            onNextChargeDateClick = onNextChargeDateClick,
+        )
         !state.isTrial && state.currentStep == 3 -> Step3ReminderPrice(state, onEvent)
         else -> Step4Confirmation(state)
     }
@@ -230,19 +312,7 @@ private fun Step1NameLogoTrial(
             placeholder = "e.g., Netflix, Spotify",
         )
 
-        FieldLabel("Logo (optional)")
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(96.dp)
-                .border(2.dp, Color(0xFFD1D5DB), RoundedCornerShape(14.dp))
-                .background(Color.White, RoundedCornerShape(14.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("Upload Image", color = TextSecondary, fontSize = 14.sp)
-        }
-
-        FieldLabel("Or choose an emoji")
+        FieldLabel("Choose an emoji")
         emojiOptions.chunked(6).forEach { row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -285,13 +355,14 @@ private fun Step1NameLogoTrial(
 private fun Step2TrialDetails(
     state: SubscriptionUiState,
     onEvent: (AddSubscriptionEvent) -> Unit,
+    onTrialEndDateClick: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         FieldLabel("Trial End Date")
-        FilledInput(
+        DateFieldButton(
             value = state.trialEndDate,
-            onValueChange = { onEvent(AddSubscriptionEvent.TrialEndDateChanged(it)) },
-            placeholder = "YYYY-MM-DD",
+            placeholder = "Pick a date",
+            onClick = onTrialEndDateClick,
         )
 
         ToggleCard(
@@ -316,6 +387,8 @@ private fun Step2TrialDetails(
             onValueChange = { onEvent(AddSubscriptionEvent.PriceAfterTrialChanged(it)) },
             placeholder = "0.00",
         )
+
+        SharedSection(state = state, onEvent = onEvent)
     }
 }
 
@@ -323,9 +396,24 @@ private fun Step2TrialDetails(
 private fun Step2Frequency(
     state: SubscriptionUiState,
     onEvent: (AddSubscriptionEvent) -> Unit,
+    onNextChargeDateClick: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
         FieldLabel("How often are you charged?")
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+            FrequencyButton(
+                text = "Daily",
+                selected = state.frequency == BillingFrequency.DAILY,
+                onClick = { onEvent(AddSubscriptionEvent.FrequencyChanged(BillingFrequency.DAILY)) },
+                modifier = Modifier.weight(1f),
+            )
+            FrequencyButton(
+                text = "Weekly",
+                selected = state.frequency == BillingFrequency.WEEKLY,
+                onClick = { onEvent(AddSubscriptionEvent.FrequencyChanged(BillingFrequency.WEEKLY)) },
+                modifier = Modifier.weight(1f),
+            )
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
             FrequencyButton(
                 text = "Monthly",
@@ -339,34 +427,21 @@ private fun Step2Frequency(
                 onClick = { onEvent(AddSubscriptionEvent.FrequencyChanged(BillingFrequency.YEARLY)) },
                 modifier = Modifier.weight(1f),
             )
-            FrequencyButton(
-                text = "Custom",
-                selected = state.frequency == BillingFrequency.CUSTOM,
-                onClick = { onEvent(AddSubscriptionEvent.FrequencyChanged(BillingFrequency.CUSTOM)) },
-                modifier = Modifier.weight(1f),
-            )
         }
 
-        if (state.frequency == BillingFrequency.CUSTOM) {
-            FilledInput(
-                value = state.customMonths,
-                onValueChange = { onEvent(AddSubscriptionEvent.CustomMonthsChanged(it)) },
-                placeholder = "Number of months",
-                keyboardType = KeyboardType.Number,
-            )
-        }
-
-        ToggleCard(
-            label = "Do you pay this manually?",
-            checked = state.isManualPayment,
-            onCheckedChange = { onEvent(AddSubscriptionEvent.ManualPaymentChanged(it)) },
+        FieldLabel("Frequency interval")
+        FilledInput(
+            value = state.frequencyInterval,
+            onValueChange = { onEvent(AddSubscriptionEvent.FrequencyIntervalChanged(it)) },
+            placeholder = "1",
+            keyboardType = KeyboardType.Number,
         )
 
         FieldLabel("When is your next charge?")
-        FilledInput(
+        DateFieldButton(
             value = state.nextCharge,
-            onValueChange = { onEvent(AddSubscriptionEvent.NextChargeChanged(it)) },
-            placeholder = "YYYY-MM-DD",
+            placeholder = "Pick a date",
+            onClick = onNextChargeDateClick,
         )
     }
 }
@@ -399,6 +474,8 @@ private fun Step3ReminderPrice(
             onValueChange = { onEvent(AddSubscriptionEvent.PriceChanged(it)) },
             placeholder = "0.00",
         )
+
+        SharedSection(state = state, onEvent = onEvent)
     }
 }
 
@@ -412,6 +489,7 @@ private fun Step3TrialConfirmation(state: SubscriptionUiState) {
             add("Trial End Date" to formatDate(state.trialEndDate))
             if (state.trialReminderEnabled) add("Reminder" to "${state.trialReminderDays.ifBlank { "3" }} days before")
             if (state.priceAfterTrial.isNotBlank()) add("Price After Trial" to "${state.priceAfterTrial}€")
+            if (state.isSharedSubscription) add("Shared with" to "${state.sharedWith.ifBlank { "1" }} people")
         },
     )
 }
@@ -424,11 +502,33 @@ private fun Step4Confirmation(state: SubscriptionUiState) {
         lines = buildList {
             add("Next charge" to formatDate(state.nextCharge))
             add("Frequency" to formatFrequency(state))
-            add("Payment" to if (state.isManualPayment) "Manual" else "Automatic")
-            if (state.reminderEnabled) add("Reminder" to "${state.reminderDays.ifBlank { "3" }} days before")
+                        if (state.reminderEnabled) add("Reminder" to "${state.reminderDays.ifBlank { "3" }} days before")
             if (state.price.isNotBlank()) add("Price" to "${state.price}€")
+            if (state.isSharedSubscription) add("Shared with" to "${state.sharedWith.ifBlank { "1" }} people")
         },
     )
+}
+
+@Composable
+private fun SharedSection(
+    state: SubscriptionUiState,
+    onEvent: (AddSubscriptionEvent) -> Unit,
+) {
+    ToggleCard(
+        label = "Is this subscription shared with anyone?",
+        checked = state.isSharedSubscription,
+        onCheckedChange = { onEvent(AddSubscriptionEvent.SharedSubscriptionChanged(it)) },
+    )
+
+    if (state.isSharedSubscription) {
+        FieldLabel("How many other people is it shared with?")
+        FilledInput(
+            value = state.sharedWith,
+            onValueChange = { onEvent(AddSubscriptionEvent.SharedWithChanged(it)) },
+            placeholder = "1",
+            keyboardType = KeyboardType.Number,
+        )
+    }
 }
 
 @Composable
@@ -548,6 +648,34 @@ private fun FilledInput(
 }
 
 @Composable
+private fun DateFieldButton(
+    value: String,
+    placeholder: String,
+    onClick: () -> Unit,
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp),
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFFF3F3F5),
+            contentColor = TextPrimary,
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+    ) {
+        Text(
+            text = if (value.isBlank()) placeholder else formatDate(value),
+            color = if (value.isBlank()) TextSecondary else TextPrimary,
+            fontSize = 14.sp,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Start,
+        )
+    }
+}
+
+@Composable
 private fun MoneyInput(
     value: String,
     onValueChange: (String) -> Unit,
@@ -620,7 +748,7 @@ private fun FrequencyButton(
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
     ) {
-        Text(text = text, fontWeight = FontWeight.Normal, fontSize = 16.sp)
+        Text(text = text, fontWeight = FontWeight.Normal, fontSize = 14.sp)
     }
 }
 
@@ -628,7 +756,7 @@ private fun formatDate(dateString: String): String {
     if (dateString.isBlank()) return "Not set"
     return try {
         val parsed = LocalDate.parse(dateString)
-        parsed.format(DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.US))
+        parsed.format(DateTimeFormatter.ofPattern("MMM d, uuuu", Locale.US))
     } catch (_: DateTimeParseException) {
         dateString
     }
@@ -636,8 +764,19 @@ private fun formatDate(dateString: String): String {
 
 private fun formatFrequency(state: SubscriptionUiState): String {
     return when (state.frequency) {
-        BillingFrequency.MONTHLY -> "Every month"
-        BillingFrequency.YEARLY -> "Every year"
-        BillingFrequency.CUSTOM -> "Every ${state.customMonths.ifBlank { "?" }} months"
+        BillingFrequency.DAILY -> "Every ${state.frequencyInterval.ifBlank { "?" }} day(s)"
+        BillingFrequency.WEEKLY -> "Every ${state.frequencyInterval.ifBlank { "?" }} week(s)"
+        BillingFrequency.MONTHLY -> "Every ${state.frequencyInterval.ifBlank { "?" }} month(s)"
+        BillingFrequency.YEARLY -> "Every ${state.frequencyInterval.ifBlank { "?" }} year(s)"
     }
 }
+
+private fun millisToIsoDate(millis: Long): String {
+    return Instant.ofEpochMilli(millis)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+        .toString()
+}
+
+
+

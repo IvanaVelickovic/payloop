@@ -9,9 +9,11 @@ sealed interface AddSubscriptionEvent {
     data class TrialChanged(val value: Boolean) : AddSubscriptionEvent
 
     data class FrequencyChanged(val value: BillingFrequency) : AddSubscriptionEvent
-    data class CustomMonthsChanged(val value: String) : AddSubscriptionEvent
+    data class FrequencyIntervalChanged(val value: String) : AddSubscriptionEvent
     data class ManualPaymentChanged(val value: Boolean) : AddSubscriptionEvent
     data class NextChargeChanged(val value: String) : AddSubscriptionEvent
+    data class SharedSubscriptionChanged(val value: Boolean) : AddSubscriptionEvent
+    data class SharedWithChanged(val value: String) : AddSubscriptionEvent
 
     data class ReminderEnabledChanged(val value: Boolean) : AddSubscriptionEvent
     data class ReminderDaysChanged(val value: String) : AddSubscriptionEvent
