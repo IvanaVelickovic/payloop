@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.app.payloop.data.model.normalizeEpochSeconds
 import com.app.payloop.data.model.Subscription
 import com.app.payloop.worker.ReminderWorker
 import java.time.Instant
@@ -46,7 +47,7 @@ class NotificationScheduler(
 
         val zone = ZoneId.systemDefault()
 
-        val nextCharge = Instant.ofEpochSecond(subscription.nextChargeTimestamp)
+        val nextCharge = Instant.ofEpochSecond(normalizeEpochSeconds(subscription.nextChargeTimestamp))
             .atZone(zone)
             .toLocalDate()
 

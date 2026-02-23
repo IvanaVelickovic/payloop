@@ -2,6 +2,7 @@ package com.app.payloop.ui.editsubscription
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.app.payloop.data.model.normalizeEpochSeconds
 import com.app.payloop.data.repository.SettingsRepository
 import com.app.payloop.data.repository.SubscriptionRepository
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
@@ -113,7 +114,7 @@ class EditSubscriptionViewModel(
                         customFrequencyEnabled = if (sub.frequencyInterval != 1) true else false,
                         reminderEnabled = sub.isReminderEnabled,
                         reminderDays = sub.reminderDaysBefore?.toString() ?: "",
-                        selectedDateTimestamp = sub.nextChargeTimestamp,
+                        selectedDateTimestamp = normalizeEpochSeconds(sub.nextChargeTimestamp),
                         isLoading = false,
                         error = null,
                         isSaved = false
@@ -190,7 +191,9 @@ class EditSubscriptionViewModel(
                     isManual = currentState.isManual,
                     isReminderEnabled = currentState.reminderEnabled,
                     reminderDaysBefore = currentState.reminderDays.toIntOrNull() ?: 1,
-                    nextChargeTimestamp = currentState.selectedDateTimestamp ?: originalSub.nextChargeTimestamp
+                    nextChargeTimestamp = normalizeEpochSeconds(
+                        currentState.selectedDateTimestamp ?: originalSub.nextChargeTimestamp,
+                    ),
                 )
 
                 repository.updateSubscription(updatedSub)

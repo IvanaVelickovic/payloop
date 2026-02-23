@@ -5,6 +5,7 @@ import androidx.compose.runtime.collectAsState
 import com.app.payloop.data.local.SubscriptionDao
 import com.app.payloop.data.model.FrequencyUnit
 import com.app.payloop.data.model.Subscription
+import com.app.payloop.data.model.normalizeEpochSeconds
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.time.Instant
@@ -53,7 +54,7 @@ class SubscriptionRepository(
         val subscriptions = dao.getAllSubscriptions().first()
 
         val expiredSubscriptions = subscriptions.filter { sub ->
-            val nextChargeDate = Instant.ofEpochSecond(sub.nextChargeTimestamp)
+            val nextChargeDate = Instant.ofEpochSecond(normalizeEpochSeconds(sub.nextChargeTimestamp))
                 .atZone(zone)
                 .toLocalDate()
             nextChargeDate <= today
@@ -76,7 +77,7 @@ class SubscriptionRepository(
 
     fun calculateNextChargeDate(sub : Subscription) : Long{
         val zone = ZoneId.systemDefault()
-        var nextChargeDate = Instant.ofEpochSecond(sub.nextChargeTimestamp)
+        var nextChargeDate = Instant.ofEpochSecond(normalizeEpochSeconds(sub.nextChargeTimestamp))
             .atZone(zone)
             .toLocalDate()
         val today = LocalDate.now(zone)

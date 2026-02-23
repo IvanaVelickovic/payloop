@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.app.payloop.data.model.FrequencyUnit
 import com.app.payloop.data.model.Subscription
+import com.app.payloop.data.model.normalizeEpochSeconds
 import com.app.payloop.navigation.NavRoutes
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionState
@@ -78,7 +79,7 @@ fun ViewSubscriptionScreen(
     val globarReminder = state.globalReminder
     val reminderEnabled = subscription.isReminderEnabled
 
-    val date = java.util.Date(subscription.nextChargeTimestamp * 1000)
+    val date = java.util.Date(normalizeEpochSeconds(subscription.nextChargeTimestamp) * 1000)
     val formatter = java.text.SimpleDateFormat("MMM d, yyyy")
     val formattedDate = formatter.format(date)
 

@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.app.payloop.data.model.FrequencyUnit
+import com.app.payloop.data.model.normalizeEpochSeconds
 import com.app.payloop.ui.editsubscription.EditSubscriptionEvent
 import com.app.payloop.ui.editsubscription.EditSubscriptionState
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
@@ -87,7 +88,7 @@ fun EditSubscriptionScreen(
 
 
     var selectedDate = state.selectedDateTimestamp?.let { timestamp ->
-        val millis = timestamp * 1000
+        val millis = normalizeEpochSeconds(timestamp) * 1000
         SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(millis))
     } ?: "No date selected"
 
@@ -140,15 +141,6 @@ fun EditSubscriptionScreen(
                 onEvent(EditSubscriptionEvent.PriceChanged(newPrice))
             },
             currency = currency
-        )
-
-        Toggle(
-            type = "Manual payment",
-            enabled = state.isManual,
-            onToggle = { isManual ->
-                onEvent(EditSubscriptionEvent.IsManualToggle(isManual))
-            },
-            globalReminder = globalReminder
         )
 
         CustomDivider()
