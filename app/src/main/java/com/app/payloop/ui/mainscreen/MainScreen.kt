@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.app.payloop.data.model.Subscription
+import com.app.payloop.data.model.normalizeEpochSeconds
 import com.app.payloop.navigation.NavRoutes
 import androidx.compose.foundation.clickable
 
@@ -322,7 +323,7 @@ fun SubscriptionCard(subscription: Subscription,
 
 @Composable
 fun CardText(subscription: Subscription, currency: String) {
-    val date = java.util.Date(subscription.nextChargeTimestamp * 1000)
+    val date = java.util.Date(normalizeEpochSeconds(subscription.nextChargeTimestamp) * 1000)
     val formatter = java.text.SimpleDateFormat("MMM d, yyyy")
     val formattedDate = formatter.format(date)
 

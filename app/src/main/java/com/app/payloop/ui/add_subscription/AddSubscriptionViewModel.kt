@@ -160,7 +160,7 @@ class AddSubscriptionViewModel(
             LocalDate.parse(value.trim())
                 .atStartOfDay(ZoneId.systemDefault())
                 .toInstant()
-                .toEpochMilli()
+                .epochSecond
         } catch (_: DateTimeParseException) {
             null
         }
