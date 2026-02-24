@@ -207,6 +207,10 @@ class AddSubscriptionViewModel(
         }
 
         if (!state.isTrial && state.currentStep == 3) {
+            val priceInCents = toPriceInCents(state.price)
+            if (priceInCents <= 0L) {
+                return "Please enter a valid price greater than 0."
+            }
             if (state.reminderEnabled && !isPositiveInt(state.reminderDays)) {
                 return "Reminder days must be greater than 0."
             }
