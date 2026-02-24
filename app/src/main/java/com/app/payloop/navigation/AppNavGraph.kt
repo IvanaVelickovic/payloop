@@ -1,6 +1,9 @@
 package com.app.payloop.navigation
 
 import android.content.Intent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -59,7 +62,33 @@ fun AppNavGraph(repository: SubscriptionRepository,
         navController = navController,
         startDestination = NavRoutes.Main.route
     ) {
-        composable(NavRoutes.Main.route) {
+        composable(
+            route = NavRoutes.Main.route,
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(240),
+                )
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> -fullWidth / 3 },
+                    animationSpec = tween(240),
+                )
+            },
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> -fullWidth / 3 },
+                    animationSpec = tween(240),
+                )
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(240),
+                )
+            },
+        ) {
             val viewModel : MainScreenViewModel = viewModel (
                 factory = MainScreenViewModelFactory(repository, settingsRepository)
             )
@@ -76,7 +105,33 @@ fun AppNavGraph(repository: SubscriptionRepository,
 
         }
 
-        composable(NavRoutes.Settings.route) {
+        composable(
+            route = NavRoutes.Settings.route,
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(240),
+                )
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> -fullWidth / 3 },
+                    animationSpec = tween(240),
+                )
+            },
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> -fullWidth / 3 },
+                    animationSpec = tween(240),
+                )
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(240),
+                )
+            },
+        ) {
             val viewModel : SettingsViewModel = viewModel (
                 factory = SettingsViewModelFactory(settingsRepository, repository)
             )
@@ -93,7 +148,32 @@ fun AppNavGraph(repository: SubscriptionRepository,
                 navArgument("subscriptionId") {
                     type = NavType.LongType
                 }
-            )) { backStackEntry ->
+            ),
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(240),
+                )
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> -fullWidth / 3 },
+                    animationSpec = tween(240),
+                )
+            },
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> -fullWidth / 3 },
+                    animationSpec = tween(240),
+                )
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(240),
+                )
+            },
+        ) { backStackEntry ->
             val subscriptionId = backStackEntry.arguments!!.getLong("subscriptionId")
 
             val viewModel : ViewSubscriptionViewModel = viewModel (
@@ -117,7 +197,32 @@ fun AppNavGraph(repository: SubscriptionRepository,
                 navArgument("subscriptionId") {
                     type = NavType.LongType
                 }
-            )) { backStackEntry ->
+            ),
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(240),
+                )
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> -fullWidth / 3 },
+                    animationSpec = tween(240),
+                )
+            },
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> -fullWidth / 3 },
+                    animationSpec = tween(240),
+                )
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(240),
+                )
+            },
+        ) { backStackEntry ->
             val subscriptionId = backStackEntry.arguments!!.getLong("subscriptionId")
 
             val viewModel : EditSubscriptionViewModel = viewModel (
@@ -135,7 +240,33 @@ fun AppNavGraph(repository: SubscriptionRepository,
             )
         }
 
-        composable(NavRoutes.AddSubscription.route) {
+        composable(
+            route = NavRoutes.AddSubscription.route,
+            enterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(240),
+                )
+            },
+            exitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> -fullWidth / 3 },
+                    animationSpec = tween(240),
+                )
+            },
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { fullWidth -> -fullWidth / 3 },
+                    animationSpec = tween(240),
+                )
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { fullWidth -> fullWidth },
+                    animationSpec = tween(240),
+                )
+            },
+        ) {
             val viewModel : AddSubscriptionViewModel = viewModel (
                 factory = AddSubscriptionViewModelFactory(repository)
             )
