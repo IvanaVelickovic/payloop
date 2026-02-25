@@ -1,5 +1,9 @@
-package com.app.payloop.settings
+﻿package com.app.payloop.settings
 
+import android.content.Intent
+import android.graphics.Bitmap
+import android.os.Environment
+import android.provider.MediaStore
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,10 +44,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import com.app.payloop.data.model.FrequencyUnit
 import com.app.payloop.data.model.Subscription
@@ -54,6 +60,8 @@ import com.app.payloop.data.payment.EpcQrPayloadBuilder
 import com.app.payloop.navigation.NavRoutes
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionState
+import java.io.File
+import java.io.FileOutputStream
 
 @Composable
 fun ViewSubscriptionScreen(
@@ -179,7 +187,7 @@ fun ViewSubscriptionScreen(
                 iconBackgroundColor = Color(0xFFE3EDFF),
                 iconTextColor = Color(0xFF5B7FBD),
                 label = if(subscription.price != 0L) "Price" else "Frequency",
-                value = if(subscription.price != 0L) "${subscription.price/100f}${state.currency} • Every ${frequencyInterval}${frequency}"
+                value = if(subscription.price != 0L) "${subscription.price/100f}${state.currency} â€¢ Every ${frequencyInterval}${frequency}"
                 else "Every ${frequencyInterval}${frequency}",
                 useTextIcon = true
             )
@@ -287,6 +295,8 @@ fun SharedPaymentQrDialog(
     receiverPaymentNote: String,
     onDismiss: () -> Unit,
 ) {
+    val context = LocalContext.current
+    var saveFeedback by remember { mutableStateOf<String?>(null) }
     val amountEurText = String.format("%.2f", amountInCents / 100f)
     val isEurCurrency = currency.contains("€") || currency.contains("â‚¬") || currency.equals("EUR", true)
     val payloadInput = remember(
@@ -330,6 +340,9 @@ fun SharedPaymentQrDialog(
             onFailure = { Result.failure(it) },
         )
     }
+    val qrBitmap = qrResult.getOrNull()
+    val payloadText = payloadResult.getOrNull().orEmpty()
+    val shareText = "Shared subscription payment for $subscriptionName, amount $amountEurText EUR"
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -342,7 +355,7 @@ fun SharedPaymentQrDialog(
                     fontSize = 14.sp,
                 )
                 if (validationErrors.isEmpty()) {
-                    qrResult.getOrNull()?.let { bitmap ->
+                    qrBitmap?.let { bitmap ->
                         Image(
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = "Shared payment EPC QR code",
@@ -351,6 +364,36 @@ fun SharedPaymentQrDialog(
                                 .padding(top = 12.dp)
                                 .height(220.dp),
                         )
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp),
+                        horizontalArrangement = Arrangement.End,
+                    ) {
+                        Button(
+                            onClick = {
+                                if (qrBitmap != null) {
+                                    val result = saveQrToPictures(
+                                        context = context,
+                                        bitmap = qrBitmap,
+                                        namePrefix = "payloop_shared_qr",
+                                    )
+                                    saveFeedback = if (result.isSuccess) {
+                                        "Saved to Pictures/Payloop."
+                                    } else {
+                                        "Could not save image."
+                                    }
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE5E7EB),
+                                contentColor = Color(0xFF1F2937),
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                        ) {
+                            Text("Save image")
+                        }
                     }
                 } else {
                     validationErrors.forEach { err ->
@@ -362,19 +405,94 @@ fun SharedPaymentQrDialog(
                         )
                     }
                 }
+                saveFeedback?.let { feedback ->
+                    Text(
+                        text = feedback,
+                        color = Color(0xFF166534),
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = onDismiss,
+                onClick = {
+                    if (qrBitmap != null && payloadText.isNotBlank()) {
+                        shareQrImage(
+                            context = context,
+                            bitmap = qrBitmap,
+                            shareText = "$shareText\n\n$payloadText",
+                        )
+                    }
+                },
+                enabled = qrBitmap != null && validationErrors.isEmpty(),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B7FBD)),
             ) {
-                Text("Close", color = Color.White)
+                Text("Share", color = Color.White)
+            }
+        },
+        dismissButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE5E7EB)),
+            ) {
+                Text("Close", color = Color(0xFF1F2937))
             }
         },
         containerColor = Color.White,
         shape = RoundedCornerShape(16.dp),
     )
+}
+
+private fun shareQrImage(
+    context: android.content.Context,
+    bitmap: Bitmap,
+    shareText: String,
+) {
+    val cacheDir = File(context.cacheDir, "shared_qr")
+    if (!cacheDir.exists()) cacheDir.mkdirs()
+    val imageFile = File(cacheDir, "payment_qr.png")
+    FileOutputStream(imageFile).use { out ->
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+    }
+
+    val uri = FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        imageFile,
+    )
+
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "image/png"
+        putExtra(Intent.EXTRA_STREAM, uri)
+        putExtra(Intent.EXTRA_TEXT, shareText)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(shareIntent, "Share payment QR"))
+}
+
+private fun saveQrToPictures(
+    context: android.content.Context,
+    bitmap: Bitmap,
+    namePrefix: String,
+): Result<Unit> {
+    return runCatching {
+        val resolver = context.contentResolver
+        val fileName = "${namePrefix}_${System.currentTimeMillis()}.png"
+        val contentValues = android.content.ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/Payloop")
+        }
+
+        val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            ?: error("Failed to create MediaStore record.")
+
+        resolver.openOutputStream(uri)?.use { stream ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        } ?: error("Failed to open output stream.")
+    }
 }
 
 @Composable
@@ -689,4 +807,7 @@ fun DeleteConfirmationDialog(
         shape = RoundedCornerShape(16.dp)
     )
 }
+
+
+
 
