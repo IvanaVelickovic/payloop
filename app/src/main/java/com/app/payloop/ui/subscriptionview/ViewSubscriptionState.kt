@@ -7,5 +7,9 @@ data class ViewSubscriptionState (
     val isLoading: Boolean = false,
     val error: String? = null,
     val currency : String = "€",
-    val globalReminder : Boolean = true
+    val globalReminder : Boolean = true,
+    val receiverName: String = "",
+    val receiverIban: String = "",
+    val receiverBic: String = "",
+    val receiverPaymentNote: String = "",
 )

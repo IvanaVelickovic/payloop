@@ -1,5 +1,6 @@
 package com.app.payloop.settings
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +48,9 @@ import androidx.navigation.NavController
 import com.app.payloop.data.model.FrequencyUnit
 import com.app.payloop.data.model.Subscription
 import com.app.payloop.data.model.normalizeEpochSeconds
+import com.app.payloop.data.payment.EpcQrBitmapGenerator
+import com.app.payloop.data.payment.EpcQrData
+import com.app.payloop.data.payment.EpcQrPayloadBuilder
 import com.app.payloop.navigation.NavRoutes
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
 import com.app.payloop.ui.subscriptionview.ViewSubscriptionState
@@ -59,6 +64,7 @@ fun ViewSubscriptionScreen(
 ) {
     val subscription = state.subscription
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showPaymentQrDialog by remember { mutableStateOf(false) }
     if(subscription == null) {
         Text("Loading")
         return
@@ -95,6 +101,24 @@ fun ViewSubscriptionScreen(
 
     val pricePerPerson =String.format("%.2f", subscription.price / 100f / (subscription.sharedWith + 1))
     val sharedWith = if(subscription.sharedWith == 1) "person" else "people"
+    val perPersonCents = if (subscription.sharedWith > 0) {
+        subscription.price / (subscription.sharedWith + 1)
+    } else {
+        0L
+    }
+
+    if (showPaymentQrDialog) {
+        SharedPaymentQrDialog(
+            subscriptionName = subscription.name,
+            amountInCents = perPersonCents,
+            currency = state.currency,
+            receiverName = state.receiverName,
+            receiverIban = state.receiverIban,
+            receiverBic = state.receiverBic,
+            receiverPaymentNote = state.receiverPaymentNote,
+            onDismiss = { showPaymentQrDialog = false },
+        )
+    }
 
 
     Box(
@@ -178,6 +202,10 @@ fun ViewSubscriptionScreen(
                     label = "Shared with ${subscription.sharedWith} $sharedWith",
                     value = "${pricePerPerson}${state.currency} per person"
                 )
+
+                SharedPaymentQrAction(
+                    onClick = { showPaymentQrDialog = true }
+                )
             }
 
             //Reminder
@@ -218,6 +246,135 @@ fun ViewSubscriptionScreen(
     }
 
 
+}
+
+@Composable
+fun SharedPaymentQrAction(
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .padding(start = 16.dp, end = 16.dp, top = 10.dp)
+            .fillMaxWidth(),
+    ) {
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(46.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFFE3EDFF),
+                contentColor = Color(0xFF1D4ED8),
+            ),
+            shape = RoundedCornerShape(12.dp),
+        ) {
+            Text(
+                text = "Show Payment QR",
+                fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+@Composable
+fun SharedPaymentQrDialog(
+    subscriptionName: String,
+    amountInCents: Long,
+    currency: String,
+    receiverName: String,
+    receiverIban: String,
+    receiverBic: String,
+    receiverPaymentNote: String,
+    onDismiss: () -> Unit,
+) {
+    val amountEurText = String.format("%.2f", amountInCents / 100f)
+    val isEurCurrency = currency.contains("€") || currency.contains("â‚¬") || currency.equals("EUR", true)
+    val payloadInput = remember(
+        subscriptionName,
+        amountInCents,
+        receiverName,
+        receiverIban,
+        receiverBic,
+        receiverPaymentNote,
+    ) {
+        EpcQrData(
+            beneficiaryName = receiverName,
+            iban = receiverIban,
+            bic = receiverBic.ifBlank { null },
+            amountInCents = amountInCents,
+            remittanceUnstructured = if (receiverPaymentNote.isBlank()) {
+                "$subscriptionName shared subscription"
+            } else {
+                receiverPaymentNote
+            },
+        )
+    }
+
+    val validationErrors = remember(payloadInput, isEurCurrency) {
+        val errors = EpcQrPayloadBuilder.validate(payloadInput).toMutableList()
+        if (!isEurCurrency) {
+            errors += "EPC QR supports only EUR. Change app currency to EUR for this payment flow."
+        }
+        errors
+    }
+    val payloadResult = remember(validationErrors, payloadInput) {
+        if (validationErrors.isEmpty()) {
+            EpcQrPayloadBuilder.build(payloadInput)
+        } else {
+            Result.failure(IllegalArgumentException("Validation failed."))
+        }
+    }
+    val qrResult = remember(payloadResult) {
+        payloadResult.fold(
+            onSuccess = { payload -> EpcQrBitmapGenerator.generate(payload, 720) },
+            onFailure = { Result.failure(it) },
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Shared Payment QR", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text(
+                    text = "Per-person amount: $amountEurText EUR",
+                    color = Color(0xFF4A5565),
+                    fontSize = 14.sp,
+                )
+                if (validationErrors.isEmpty()) {
+                    qrResult.getOrNull()?.let { bitmap ->
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Shared payment EPC QR code",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp)
+                                .height(220.dp),
+                        )
+                    }
+                } else {
+                    validationErrors.forEach { err ->
+                        Text(
+                            text = "- $err",
+                            color = Color(0xFFB91C1C),
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(top = 6.dp),
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B7FBD)),
+            ) {
+                Text("Close", color = Color.White)
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp),
+    )
 }
 
 @Composable
