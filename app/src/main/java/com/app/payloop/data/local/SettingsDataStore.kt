@@ -22,6 +22,10 @@ class SettingsDataStore(private val context: Context) {
         val hourlyWage = doublePreferencesKey("hourlyWage")
         val currency = stringPreferencesKey("currency")
         val reminderOn = booleanPreferencesKey("reminderOn")
+        val receiverName = stringPreferencesKey("receiverName")
+        val receiverIban = stringPreferencesKey("receiverIban")
+        val receiverBic = stringPreferencesKey("receiverBic")
+        val receiverPaymentNote = stringPreferencesKey("receiverPaymentNote")
     }
 
     suspend fun saveHourlyWage(value: Double){
@@ -56,6 +60,54 @@ class SettingsDataStore(private val context: Context) {
     fun getReminder(): Flow<Boolean> {
         return context.dataStore.data.map { data ->
             data[SettingsKeys.reminderOn] ?: true
+        }
+    }
+
+    suspend fun saveReceiverName(value: String) {
+        context.dataStore.edit { data ->
+            data[SettingsKeys.receiverName] = value
+        }
+    }
+
+    fun getReceiverName(): Flow<String> {
+        return context.dataStore.data.map { data ->
+            data[SettingsKeys.receiverName] ?: ""
+        }
+    }
+
+    suspend fun saveReceiverIban(value: String) {
+        context.dataStore.edit { data ->
+            data[SettingsKeys.receiverIban] = value
+        }
+    }
+
+    fun getReceiverIban(): Flow<String> {
+        return context.dataStore.data.map { data ->
+            data[SettingsKeys.receiverIban] ?: ""
+        }
+    }
+
+    suspend fun saveReceiverBic(value: String) {
+        context.dataStore.edit { data ->
+            data[SettingsKeys.receiverBic] = value
+        }
+    }
+
+    fun getReceiverBic(): Flow<String> {
+        return context.dataStore.data.map { data ->
+            data[SettingsKeys.receiverBic] ?: ""
+        }
+    }
+
+    suspend fun saveReceiverPaymentNote(value: String) {
+        context.dataStore.edit { data ->
+            data[SettingsKeys.receiverPaymentNote] = value
+        }
+    }
+
+    fun getReceiverPaymentNote(): Flow<String> {
+        return context.dataStore.data.map { data ->
+            data[SettingsKeys.receiverPaymentNote] ?: ""
         }
     }
 

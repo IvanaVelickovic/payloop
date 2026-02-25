@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -54,7 +55,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.app.payloop.settings.DeleteConfirmationDialog
-import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
 
 @Composable
 fun SettingsScreen(
@@ -65,6 +65,10 @@ fun SettingsScreen(
     val currencyOptions = listOf("€", "$", "£", "¥")
     val selectedCurrency by viewModel.currency.collectAsState()
     val notificationsEnabled by viewModel.reminderOn.collectAsState()
+    val receiverName by viewModel.receiverName.collectAsState()
+    val receiverIban by viewModel.receiverIban.collectAsState()
+    val receiverBic by viewModel.receiverBic.collectAsState()
+    val receiverPaymentNote by viewModel.receiverPaymentNote.collectAsState()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -147,6 +151,17 @@ fun SettingsScreen(
             NotificationsSection(
                 enabled = notificationsEnabled,
                 onEnabledChange = { viewModel.updateReminder(it) }
+            )
+
+            ReceiveSharedPaymentsSection(
+                receiverName = receiverName,
+                receiverIban = receiverIban,
+                receiverBic = receiverBic,
+                receiverPaymentNote = receiverPaymentNote,
+                onReceiverNameChange = viewModel::updateReceiverName,
+                onReceiverIbanChange = viewModel::updateReceiverIban,
+                onReceiverBicChange = viewModel::updateReceiverBic,
+                onReceiverPaymentNoteChange = viewModel::updateReceiverPaymentNote,
             )
 
             // Save button
@@ -496,4 +511,169 @@ fun DeleteConfirmationDialog(
         containerColor = Color.White,
         shape = RoundedCornerShape(16.dp)
     )
+}
+
+@Composable
+fun ReceiveSharedPaymentsSection(
+    receiverName: String,
+    receiverIban: String,
+    receiverBic: String,
+    receiverPaymentNote: String,
+    onReceiverNameChange: (String) -> Unit,
+    onReceiverIbanChange: (String) -> Unit,
+    onReceiverBicChange: (String) -> Unit,
+    onReceiverPaymentNoteChange: (String) -> Unit,
+) {
+    var receiverNameInput by remember { mutableStateOf(receiverName) }
+    var receiverIbanInput by remember { mutableStateOf(receiverIban) }
+    var receiverBicInput by remember { mutableStateOf(receiverBic) }
+    var receiverPaymentNoteInput by remember { mutableStateOf(receiverPaymentNote) }
+
+    LaunchedEffect(receiverName) { receiverNameInput = receiverName }
+    LaunchedEffect(receiverIban) { receiverIbanInput = receiverIban }
+    LaunchedEffect(receiverBic) { receiverBicInput = receiverBic }
+    LaunchedEffect(receiverPaymentNote) { receiverPaymentNoteInput = receiverPaymentNote }
+
+    val ibanLooksValid = receiverIbanInput.isBlank() || isIbanFormatLikelyValid(receiverIbanInput)
+    val bicLooksValid = receiverBicInput.isBlank() || isBicFormatLikelyValid(receiverBicInput)
+
+    Row(modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 0.dp, bottom = 20.dp)) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Payments,
+                    contentDescription = "Receive shared payments",
+                    tint = Color(0xFF5B7FBD),
+                    modifier = Modifier
+                        .height(22.dp)
+                        .padding(end = 6.dp),
+                )
+                Text(
+                    text = "Receive Shared Payments",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+
+            Text(
+                text = "These details will be used to generate EPC payment QR codes for shared subscriptions.",
+                color = Color(0xFF4A5565),
+                modifier = Modifier.padding(top = 10.dp, bottom = 14.dp),
+                fontSize = 14.sp,
+            )
+
+            OutlinedTextField(
+                value = receiverNameInput,
+                onValueChange = {
+                    receiverNameInput = it
+                    onReceiverNameChange(it)
+                },
+                textStyle = TextStyle(fontSize = 16.sp),
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Receiver name") },
+                placeholder = { Text("e.g. John Smith") },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF5B7FBD),
+                    unfocusedBorderColor = Color.Gray,
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                ),
+                shape = RoundedCornerShape(10.dp),
+            )
+
+            OutlinedTextField(
+                value = receiverIbanInput,
+                onValueChange = {
+                    receiverIbanInput = it
+                    onReceiverIbanChange(it)
+                },
+                textStyle = TextStyle(fontSize = 16.sp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                label = { Text("IBAN") },
+                placeholder = { Text("e.g. DE89370400440532013000") },
+                isError = !ibanLooksValid,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF5B7FBD),
+                    unfocusedBorderColor = Color.Gray,
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                ),
+                shape = RoundedCornerShape(10.dp),
+            )
+            if (!ibanLooksValid) {
+                Text(
+                    text = "IBAN format looks invalid.",
+                    color = Color(0xFFC10007),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+                )
+            }
+
+            OutlinedTextField(
+                value = receiverBicInput,
+                onValueChange = {
+                    receiverBicInput = it
+                    onReceiverBicChange(it)
+                },
+                textStyle = TextStyle(fontSize = 16.sp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                label = { Text("BIC (optional)") },
+                placeholder = { Text("e.g. COBADEFFXXX") },
+                isError = !bicLooksValid,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF5B7FBD),
+                    unfocusedBorderColor = Color.Gray,
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                ),
+                shape = RoundedCornerShape(10.dp),
+            )
+            if (!bicLooksValid) {
+                Text(
+                    text = "BIC must be 8 or 11 letters/digits.",
+                    color = Color(0xFFC10007),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+                )
+            }
+
+            OutlinedTextField(
+                value = receiverPaymentNoteInput,
+                onValueChange = {
+                    receiverPaymentNoteInput = it
+                    onReceiverPaymentNoteChange(it)
+                },
+                textStyle = TextStyle(fontSize = 16.sp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                label = { Text("Default payment note (optional)") },
+                placeholder = { Text("e.g. Subscription share") },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF5B7FBD),
+                    unfocusedBorderColor = Color.Gray,
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                ),
+                shape = RoundedCornerShape(10.dp),
+            )
+        }
+    }
+}
+
+private fun isIbanFormatLikelyValid(value: String): Boolean {
+    val normalized = value.uppercase().replace(" ", "")
+    if (normalized.length !in 15..34) return false
+    if (!normalized.take(2).all { it.isLetter() }) return false
+    return normalized.all { it.isLetterOrDigit() }
+}
+
+private fun isBicFormatLikelyValid(value: String): Boolean {
+    val normalized = value.uppercase().replace(" ", "")
+    if (normalized.length != 8 && normalized.length != 11) return false
+    return normalized.all { it.isLetterOrDigit() }
 }
