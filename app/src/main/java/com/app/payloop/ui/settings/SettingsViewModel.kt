@@ -4,13 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.app.payloop.data.repository.SettingsRepository
 import com.app.payloop.data.repository.SubscriptionRepository
-import com.app.payloop.ui.editsubscription.EditSubscriptionEvent
-import com.app.payloop.ui.editsubscription.EditSubscriptionState
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SettingsViewModel(
@@ -39,6 +35,34 @@ class SettingsViewModel(
             initialValue = true
         )
 
+    val receiverName: StateFlow<String> = repository.getReceiverName()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ""
+        )
+
+    val receiverIban: StateFlow<String> = repository.getReceiverIban()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ""
+        )
+
+    val receiverBic: StateFlow<String> = repository.getReceiverBic()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ""
+        )
+
+    val receiverPaymentNote: StateFlow<String> = repository.getReceiverPaymentNote()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ""
+        )
+
     fun updateHourlyWage(value: Double){
         viewModelScope.launch {
             repository.insertHourlyWage(value)
@@ -54,6 +78,32 @@ class SettingsViewModel(
     fun updateReminder(value: Boolean){
         viewModelScope.launch {
             repository.insertReminder(value)
+        }
+    }
+
+    fun updateReceiverName(value: String) {
+        viewModelScope.launch {
+            repository.insertReceiverName(value.trim())
+        }
+    }
+
+    fun updateReceiverIban(value: String) {
+        viewModelScope.launch {
+            val normalized = value.uppercase().replace(" ", "")
+            repository.insertReceiverIban(normalized)
+        }
+    }
+
+    fun updateReceiverBic(value: String) {
+        viewModelScope.launch {
+            val normalized = value.uppercase().replace(" ", "")
+            repository.insertReceiverBic(normalized)
+        }
+    }
+
+    fun updateReceiverPaymentNote(value: String) {
+        viewModelScope.launch {
+            repository.insertReceiverPaymentNote(value.trim())
         }
     }
 

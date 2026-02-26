@@ -1,18 +1,11 @@
 package com.app.payloop.ui.subscriptionview
 
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.app.payloop.data.local.SubscriptionDao
-import com.app.payloop.data.model.FrequencyUnit
-import com.app.payloop.data.model.Subscription
 import com.app.payloop.data.repository.SettingsRepository
 import com.app.payloop.data.repository.SubscriptionRepository
-import com.app.payloop.settings.ViewSubscriptionScreen
-import com.app.payloop.ui.subscriptionview.ViewSubscriptionState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -36,6 +29,10 @@ class ViewSubscriptionViewModel(
         }
         loadCurrency()
         loadGlobalReminder()
+        loadReceiverName()
+        loadReceiverIban()
+        loadReceiverBic()
+        loadReceiverPaymentNote()
     }
 
     fun onEvent(event: ViewSubscriptionEvent) {
@@ -99,6 +96,38 @@ class ViewSubscriptionViewModel(
         viewModelScope.launch {
             settingsRepository.getReminder().collect { reminder ->
                 _state.value = _state.value.copy(globalReminder = reminder)
+            }
+        }
+    }
+
+    private fun loadReceiverName() {
+        viewModelScope.launch {
+            settingsRepository.getReceiverName().collect { receiverName ->
+                _state.value = _state.value.copy(receiverName = receiverName)
+            }
+        }
+    }
+
+    private fun loadReceiverIban() {
+        viewModelScope.launch {
+            settingsRepository.getReceiverIban().collect { receiverIban ->
+                _state.value = _state.value.copy(receiverIban = receiverIban)
+            }
+        }
+    }
+
+    private fun loadReceiverBic() {
+        viewModelScope.launch {
+            settingsRepository.getReceiverBic().collect { receiverBic ->
+                _state.value = _state.value.copy(receiverBic = receiverBic)
+            }
+        }
+    }
+
+    private fun loadReceiverPaymentNote() {
+        viewModelScope.launch {
+            settingsRepository.getReceiverPaymentNote().collect { receiverPaymentNote ->
+                _state.value = _state.value.copy(receiverPaymentNote = receiverPaymentNote)
             }
         }
     }

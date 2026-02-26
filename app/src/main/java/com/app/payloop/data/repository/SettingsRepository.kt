@@ -16,6 +16,18 @@ class SettingsRepository(
     fun getReminder(): Flow<Boolean> {
         return dataStore.getReminder()
     }
+    fun getReceiverName(): Flow<String> {
+        return dataStore.getReceiverName()
+    }
+    fun getReceiverIban(): Flow<String> {
+        return dataStore.getReceiverIban()
+    }
+    fun getReceiverBic(): Flow<String> {
+        return dataStore.getReceiverBic()
+    }
+    fun getReceiverPaymentNote(): Flow<String> {
+        return dataStore.getReceiverPaymentNote()
+    }
 
     suspend fun insertHourlyWage(value : Double) {
         dataStore.saveHourlyWage(value)
@@ -27,6 +39,18 @@ class SettingsRepository(
 
     suspend fun insertReminder(value : Boolean) {
         dataStore.saveReminder(value)
+    }
+    suspend fun insertReceiverName(value: String) {
+        dataStore.saveReceiverName(value)
+    }
+    suspend fun insertReceiverIban(value: String) {
+        dataStore.saveReceiverIban(value)
+    }
+    suspend fun insertReceiverBic(value: String) {
+        dataStore.saveReceiverBic(value)
+    }
+    suspend fun insertReceiverPaymentNote(value: String) {
+        dataStore.saveReceiverPaymentNote(value)
     }
 
     suspend fun insertCurrencyIfNotExists(value: String) {

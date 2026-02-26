@@ -1,6 +1,7 @@
 package com.app.payloop.ui.settings
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -43,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -53,8 +56,10 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.app.payloop.data.payment.EpcQrData
+import com.app.payloop.data.payment.EpcQrBitmapGenerator
+import com.app.payloop.data.payment.EpcQrPayloadBuilder
 import com.app.payloop.settings.DeleteConfirmationDialog
-import com.app.payloop.ui.subscriptionview.ViewSubscriptionEvent
 
 @Composable
 fun SettingsScreen(
@@ -65,6 +70,10 @@ fun SettingsScreen(
     val currencyOptions = listOf("€", "$", "£", "¥")
     val selectedCurrency by viewModel.currency.collectAsState()
     val notificationsEnabled by viewModel.reminderOn.collectAsState()
+    val receiverName by viewModel.receiverName.collectAsState()
+    val receiverIban by viewModel.receiverIban.collectAsState()
+    val receiverBic by viewModel.receiverBic.collectAsState()
+    val receiverPaymentNote by viewModel.receiverPaymentNote.collectAsState()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -147,6 +156,24 @@ fun SettingsScreen(
             NotificationsSection(
                 enabled = notificationsEnabled,
                 onEnabledChange = { viewModel.updateReminder(it) }
+            )
+
+            ReceiveSharedPaymentsSection(
+                receiverName = receiverName,
+                receiverIban = receiverIban,
+                receiverBic = receiverBic,
+                receiverPaymentNote = receiverPaymentNote,
+                onReceiverNameChange = viewModel::updateReceiverName,
+                onReceiverIbanChange = viewModel::updateReceiverIban,
+                onReceiverBicChange = viewModel::updateReceiverBic,
+                onReceiverPaymentNoteChange = viewModel::updateReceiverPaymentNote,
+            )
+
+            EpcPayloadPreviewSection(
+                receiverName = receiverName,
+                receiverIban = receiverIban,
+                receiverBic = receiverBic,
+                receiverPaymentNote = receiverPaymentNote,
             )
 
             // Save button
@@ -496,4 +523,293 @@ fun DeleteConfirmationDialog(
         containerColor = Color.White,
         shape = RoundedCornerShape(16.dp)
     )
+}
+
+@Composable
+private fun EpcPayloadPreviewSection(
+    receiverName: String,
+    receiverIban: String,
+    receiverBic: String,
+    receiverPaymentNote: String,
+) {
+    val inputData = remember(receiverName, receiverIban, receiverBic, receiverPaymentNote) {
+        EpcQrData(
+            beneficiaryName = receiverName,
+            iban = receiverIban,
+            bic = receiverBic.ifBlank { null },
+            amountInCents = 1234L,
+            remittanceUnstructured = receiverPaymentNote.ifBlank { "Shared subscription payment" },
+        )
+    }
+    val validationErrors = remember(inputData) {
+        EpcQrPayloadBuilder.validate(inputData)
+    }
+    val previewResult = remember(inputData) {
+        EpcQrPayloadBuilder.build(
+            inputData,
+        )
+    }
+    val qrBitmapResult = remember(previewResult) {
+        previewResult.fold(
+            onSuccess = { payload -> EpcQrBitmapGenerator.generate(payload, sizePx = 720) },
+            onFailure = { Result.failure(it) },
+        )
+    }
+    val demoQrResult = remember {
+        val demoPayload = EpcQrPayloadBuilder.build(
+            EpcQrData(
+                beneficiaryName = "Payloop Demo",
+                iban = "DE89370400440532013000",
+                bic = "COBADEFFXXX",
+                amountInCents = 1234L,
+                remittanceUnstructured = "Demo shared payment",
+            ),
+        )
+        demoPayload.fold(
+            onSuccess = { payload -> EpcQrBitmapGenerator.generate(payload, sizePx = 720) },
+            onFailure = { Result.failure(it) },
+        )
+    }
+
+    Row(modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 0.dp, bottom = 24.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFF9FAFB), shape = RoundedCornerShape(10.dp))
+                .padding(12.dp),
+        ) {
+            Text(
+                text = "EPC Payload Preview",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = "Sample amount: 12.34 EUR",
+                color = Color(0xFF4A5565),
+                fontSize = 13.sp,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+
+            if (previewResult.isSuccess) {
+                Text(
+                    text = "Status: ready",
+                    color = Color(0xFF166534),
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                qrBitmapResult.getOrNull()?.let { bitmap ->
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "EPC QR preview",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 10.dp)
+                            .height(220.dp),
+                    )
+                }
+                Text(
+                    text = previewResult.getOrNull().orEmpty(),
+                    fontSize = 12.sp,
+                    color = Color(0xFF1F2937),
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            } else {
+                Text(
+                    text = "Status: incomplete",
+                    color = Color(0xFFC10007),
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+                validationErrors.forEach { err ->
+                    Text(
+                        text = "• $err",
+                        fontSize = 12.sp,
+                        color = Color(0xFF4A5565),
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                Text(
+                    text = "Demo QR (render check):",
+                    fontSize = 12.sp,
+                    color = Color(0xFF4A5565),
+                    modifier = Modifier.padding(top = 10.dp),
+                )
+                demoQrResult.getOrNull()?.let { bitmap ->
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "Demo EPC QR preview",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp)
+                            .height(220.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ReceiveSharedPaymentsSection(
+    receiverName: String,
+    receiverIban: String,
+    receiverBic: String,
+    receiverPaymentNote: String,
+    onReceiverNameChange: (String) -> Unit,
+    onReceiverIbanChange: (String) -> Unit,
+    onReceiverBicChange: (String) -> Unit,
+    onReceiverPaymentNoteChange: (String) -> Unit,
+) {
+    var receiverNameInput by remember { mutableStateOf(receiverName) }
+    var receiverIbanInput by remember { mutableStateOf(receiverIban) }
+    var receiverBicInput by remember { mutableStateOf(receiverBic) }
+    var receiverPaymentNoteInput by remember { mutableStateOf(receiverPaymentNote) }
+
+    LaunchedEffect(receiverName) { receiverNameInput = receiverName }
+    LaunchedEffect(receiverIban) { receiverIbanInput = receiverIban }
+    LaunchedEffect(receiverBic) { receiverBicInput = receiverBic }
+    LaunchedEffect(receiverPaymentNote) { receiverPaymentNoteInput = receiverPaymentNote }
+
+    val ibanLooksValid = receiverIbanInput.isBlank() || isIbanFormatLikelyValid(receiverIbanInput)
+    val bicLooksValid = receiverBicInput.isBlank() || isBicFormatLikelyValid(receiverBicInput)
+
+    Row(modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 0.dp, bottom = 20.dp)) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Outlined.Payments,
+                    contentDescription = "Receive shared payments",
+                    tint = Color(0xFF5B7FBD),
+                    modifier = Modifier
+                        .height(22.dp)
+                        .padding(end = 6.dp),
+                )
+                Text(
+                    text = "Receive Shared Payments",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
+
+            Text(
+                text = "These details will be used to generate EPC payment QR codes for shared subscriptions.",
+                color = Color(0xFF4A5565),
+                modifier = Modifier.padding(top = 10.dp, bottom = 14.dp),
+                fontSize = 14.sp,
+            )
+
+            OutlinedTextField(
+                value = receiverNameInput,
+                onValueChange = {
+                    receiverNameInput = it
+                    onReceiverNameChange(it)
+                },
+                textStyle = TextStyle(fontSize = 16.sp),
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Receiver name") },
+                placeholder = { Text("e.g. John Smith") },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF5B7FBD),
+                    unfocusedBorderColor = Color.Gray,
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                ),
+                shape = RoundedCornerShape(10.dp),
+            )
+
+            OutlinedTextField(
+                value = receiverIbanInput,
+                onValueChange = {
+                    receiverIbanInput = it
+                    onReceiverIbanChange(it)
+                },
+                textStyle = TextStyle(fontSize = 16.sp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                label = { Text("IBAN") },
+                placeholder = { Text("e.g. DE89370400440532013000") },
+                isError = !ibanLooksValid,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF5B7FBD),
+                    unfocusedBorderColor = Color.Gray,
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                ),
+                shape = RoundedCornerShape(10.dp),
+            )
+            if (!ibanLooksValid) {
+                Text(
+                    text = "IBAN format looks invalid.",
+                    color = Color(0xFFC10007),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+                )
+            }
+
+            OutlinedTextField(
+                value = receiverBicInput,
+                onValueChange = {
+                    receiverBicInput = it
+                    onReceiverBicChange(it)
+                },
+                textStyle = TextStyle(fontSize = 16.sp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                label = { Text("BIC (optional)") },
+                placeholder = { Text("e.g. COBADEFFXXX") },
+                isError = !bicLooksValid,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF5B7FBD),
+                    unfocusedBorderColor = Color.Gray,
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                ),
+                shape = RoundedCornerShape(10.dp),
+            )
+            if (!bicLooksValid) {
+                Text(
+                    text = "BIC must be 8 or 11 letters/digits.",
+                    color = Color(0xFFC10007),
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+                )
+            }
+
+            OutlinedTextField(
+                value = receiverPaymentNoteInput,
+                onValueChange = {
+                    receiverPaymentNoteInput = it
+                    onReceiverPaymentNoteChange(it)
+                },
+                textStyle = TextStyle(fontSize = 16.sp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp),
+                label = { Text("Default payment note (optional)") },
+                placeholder = { Text("e.g. Subscription share") },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF5B7FBD),
+                    unfocusedBorderColor = Color.Gray,
+                    unfocusedContainerColor = Color(0xFFF9FAFB),
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                ),
+                shape = RoundedCornerShape(10.dp),
+            )
+        }
+    }
+}
+
+private fun isIbanFormatLikelyValid(value: String): Boolean {
+    val normalized = value.uppercase().replace(" ", "")
+    if (normalized.length !in 15..34) return false
+    if (!normalized.take(2).all { it.isLetter() }) return false
+    return normalized.all { it.isLetterOrDigit() }
+}
+
+private fun isBicFormatLikelyValid(value: String): Boolean {
+    val normalized = value.uppercase().replace(" ", "")
+    if (normalized.length != 8 && normalized.length != 11) return false
+    return normalized.all { it.isLetterOrDigit() }
 }
