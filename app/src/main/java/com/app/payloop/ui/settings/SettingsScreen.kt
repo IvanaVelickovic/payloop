@@ -1,7 +1,6 @@
 package com.app.payloop.ui.settings
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -56,9 +54,6 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.app.payloop.data.payment.EpcQrData
-import com.app.payloop.data.payment.EpcQrBitmapGenerator
-import com.app.payloop.data.payment.EpcQrPayloadBuilder
 import com.app.payloop.settings.DeleteConfirmationDialog
 
 @Composable
@@ -169,13 +164,6 @@ fun SettingsScreen(
                 onReceiverPaymentNoteChange = viewModel::updateReceiverPaymentNote,
             )
 
-            EpcPayloadPreviewSection(
-                receiverName = receiverName,
-                receiverIban = receiverIban,
-                receiverBic = receiverBic,
-                receiverPaymentNote = receiverPaymentNote,
-            )
-
             // Save button
             //SaveButton()
 
@@ -265,7 +253,11 @@ fun HourlyWageSection(
                     focusedBorderColor = Color(0xFF5B7FBD),
                     unfocusedBorderColor = Color.Gray,
                     unfocusedContainerColor = Color(0xFFF9FAFB),
-                    focusedContainerColor = Color(0xFFF9FAFB)
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Black,
+                    cursorColor = Color.Black
                 ),
                 shape = RoundedCornerShape(10.dp)
             )
@@ -526,130 +518,6 @@ fun DeleteConfirmationDialog(
 }
 
 @Composable
-private fun EpcPayloadPreviewSection(
-    receiverName: String,
-    receiverIban: String,
-    receiverBic: String,
-    receiverPaymentNote: String,
-) {
-    val inputData = remember(receiverName, receiverIban, receiverBic, receiverPaymentNote) {
-        EpcQrData(
-            beneficiaryName = receiverName,
-            iban = receiverIban,
-            bic = receiverBic.ifBlank { null },
-            amountInCents = 1234L,
-            remittanceUnstructured = receiverPaymentNote.ifBlank { "Shared subscription payment" },
-        )
-    }
-    val validationErrors = remember(inputData) {
-        EpcQrPayloadBuilder.validate(inputData)
-    }
-    val previewResult = remember(inputData) {
-        EpcQrPayloadBuilder.build(
-            inputData,
-        )
-    }
-    val qrBitmapResult = remember(previewResult) {
-        previewResult.fold(
-            onSuccess = { payload -> EpcQrBitmapGenerator.generate(payload, sizePx = 720) },
-            onFailure = { Result.failure(it) },
-        )
-    }
-    val demoQrResult = remember {
-        val demoPayload = EpcQrPayloadBuilder.build(
-            EpcQrData(
-                beneficiaryName = "Payloop Demo",
-                iban = "DE89370400440532013000",
-                bic = "COBADEFFXXX",
-                amountInCents = 1234L,
-                remittanceUnstructured = "Demo shared payment",
-            ),
-        )
-        demoPayload.fold(
-            onSuccess = { payload -> EpcQrBitmapGenerator.generate(payload, sizePx = 720) },
-            onFailure = { Result.failure(it) },
-        )
-    }
-
-    Row(modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 0.dp, bottom = 24.dp)) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFF9FAFB), shape = RoundedCornerShape(10.dp))
-                .padding(12.dp),
-        ) {
-            Text(
-                text = "EPC Payload Preview",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-            )
-            Text(
-                text = "Sample amount: 12.34 EUR",
-                color = Color(0xFF4A5565),
-                fontSize = 13.sp,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-
-            if (previewResult.isSuccess) {
-                Text(
-                    text = "Status: ready",
-                    color = Color(0xFF166534),
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-                qrBitmapResult.getOrNull()?.let { bitmap ->
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "EPC QR preview",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp)
-                            .height(220.dp),
-                    )
-                }
-                Text(
-                    text = previewResult.getOrNull().orEmpty(),
-                    fontSize = 12.sp,
-                    color = Color(0xFF1F2937),
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-            } else {
-                Text(
-                    text = "Status: incomplete",
-                    color = Color(0xFFC10007),
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-                validationErrors.forEach { err ->
-                    Text(
-                        text = "• $err",
-                        fontSize = 12.sp,
-                        color = Color(0xFF4A5565),
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-                Text(
-                    text = "Demo QR (render check):",
-                    fontSize = 12.sp,
-                    color = Color(0xFF4A5565),
-                    modifier = Modifier.padding(top = 10.dp),
-                )
-                demoQrResult.getOrNull()?.let { bitmap ->
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "Demo EPC QR preview",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 6.dp)
-                            .height(220.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun ReceiveSharedPaymentsSection(
     receiverName: String,
     receiverIban: String,
@@ -713,6 +581,10 @@ fun ReceiveSharedPaymentsSection(
                     unfocusedBorderColor = Color.Gray,
                     unfocusedContainerColor = Color(0xFFF9FAFB),
                     focusedContainerColor = Color(0xFFF9FAFB),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Black,
+                    cursorColor = Color.Black,
                 ),
                 shape = RoundedCornerShape(10.dp),
             )
@@ -735,6 +607,10 @@ fun ReceiveSharedPaymentsSection(
                     unfocusedBorderColor = Color.Gray,
                     unfocusedContainerColor = Color(0xFFF9FAFB),
                     focusedContainerColor = Color(0xFFF9FAFB),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Black,
+                    cursorColor = Color.Black,
                 ),
                 shape = RoundedCornerShape(10.dp),
             )
@@ -765,6 +641,10 @@ fun ReceiveSharedPaymentsSection(
                     unfocusedBorderColor = Color.Gray,
                     unfocusedContainerColor = Color(0xFFF9FAFB),
                     focusedContainerColor = Color(0xFFF9FAFB),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Black,
+                    cursorColor = Color.Black,
                 ),
                 shape = RoundedCornerShape(10.dp),
             )
@@ -794,6 +674,10 @@ fun ReceiveSharedPaymentsSection(
                     unfocusedBorderColor = Color.Gray,
                     unfocusedContainerColor = Color(0xFFF9FAFB),
                     focusedContainerColor = Color(0xFFF9FAFB),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Black,
+                    cursorColor = Color.Black,
                 ),
                 shape = RoundedCornerShape(10.dp),
             )

@@ -640,6 +640,10 @@ private fun FilledInput(
             focusedContainerColor = Color(0xFFF3F3F5),
             unfocusedContainerColor = Color(0xFFF3F3F5),
             disabledContainerColor = Color(0xFFF3F3F5),
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black,
+            disabledTextColor = Color.Black,
+            cursorColor = Color.Black,
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
         ),
@@ -777,6 +781,5 @@ private fun millisToIsoDate(millis: Long): String {
         .toLocalDate()
         .toString()
 }
-
 
 

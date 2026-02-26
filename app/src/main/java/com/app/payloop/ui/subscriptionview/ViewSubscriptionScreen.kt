@@ -198,7 +198,8 @@ fun ViewSubscriptionScreen(
                 iconBackgroundColor = Color(0xFFE3EDFF),
                 iconTint = Color(0xFF5B7FBD),
                 label = if (subscription.isTrial) "Free trial ends on" else "Next charge",
-                value = formattedDate
+                value = formattedDate,
+                labelColor = Color.Black
             )
 
             if(subscription.sharedWith > 0){
@@ -498,6 +499,11 @@ private fun saveQrToPictures(
 @Composable
 fun SubscriptionHeader(subscription: Subscription) {
     val iconColor = subscription.color?.let { Color(it) } ?: Color.Gray
+    val thumbnailText = if (subscription.icon.isNotBlank()) {
+        subscription.icon
+    } else {
+        subscription.name.first().toString()
+    }
     Row(
         modifier = Modifier.padding(16.dp),
         horizontalArrangement = Arrangement.Start,
@@ -509,7 +515,7 @@ fun SubscriptionHeader(subscription: Subscription) {
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = subscription.name.first().toString(),
+                text = thumbnailText,
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
@@ -530,6 +536,7 @@ fun SubscriptionHeader(subscription: Subscription) {
         ) {
             Text(
                 text = subscription.name,
+                color = Color.Black,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(bottom = 2.dp, top = 2.dp)
@@ -574,7 +581,8 @@ fun SubscriptionDetailRow(
     iconTextColor: Color? = null,
     label: String,
     value: String,
-    useTextIcon: Boolean = false
+    useTextIcon: Boolean = false,
+    labelColor: Color = Color(0xFF4A5565),
 ) {
     Row(
         modifier = Modifier
@@ -617,7 +625,7 @@ fun SubscriptionDetailRow(
         Column(modifier = Modifier.padding(start = 6.dp)) {
             Text(
                 text = label,
-                color = Color(0xFF4A5565)
+                color = labelColor
             )
             Text(
                 text = value,
@@ -807,7 +815,4 @@ fun DeleteConfirmationDialog(
         shape = RoundedCornerShape(16.dp)
     )
 }
-
-
-
 

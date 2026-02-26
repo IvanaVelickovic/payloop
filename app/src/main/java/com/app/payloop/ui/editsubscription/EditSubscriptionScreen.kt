@@ -297,7 +297,11 @@ fun SubscriptionNameField(
                     focusedBorderColor = Color(0xFF5B7FBD),
                     unfocusedBorderColor = Color(0xFFD1D5DC),
                     unfocusedContainerColor = Color(0xFFF9FAFB),
-                    focusedContainerColor = Color(0xFFF9FAFB)
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Black,
+                    cursorColor = Color.Black
                 ),
                 shape = RoundedCornerShape(10.dp),
             )
@@ -340,7 +344,11 @@ fun PriceField(
                     focusedBorderColor = Color(0xFF5B7FBD),
                     unfocusedBorderColor = Color(0xFFD1D5DC),
                     unfocusedContainerColor = Color(0xFFF9FAFB),
-                    focusedContainerColor = Color(0xFFF9FAFB)
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Black,
+                    cursorColor = Color.Black
                 ),
                 shape = RoundedCornerShape(10.dp),
             )
@@ -470,7 +478,11 @@ fun FrequencySection(
                             focusedBorderColor = Color(0xFF5B7FBD),
                             unfocusedBorderColor = Color(0xFFD1D5DC),
                             unfocusedContainerColor = Color(0xFFF9FAFB),
-                            focusedContainerColor = Color(0xFFF9FAFB)
+                            focusedContainerColor = Color(0xFFF9FAFB),
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            disabledTextColor = Color.Black,
+                            cursorColor = Color.Black
                         ),
                         shape = RoundedCornerShape(10.dp),
                     )
@@ -547,7 +559,11 @@ fun SharedWithField(
                     focusedBorderColor = Color(0xFF5B7FBD),
                     unfocusedBorderColor = Color(0xFFD1D5DC),
                     unfocusedContainerColor = Color(0xFFF9FAFB),
-                    focusedContainerColor = Color(0xFFF9FAFB)
+                    focusedContainerColor = Color(0xFFF9FAFB),
+                    focusedTextColor = Color.Black,
+                    unfocusedTextColor = Color.Black,
+                    disabledTextColor = Color.Black,
+                    cursorColor = Color.Black
                 ),
                 shape = RoundedCornerShape(10.dp),
             )
@@ -636,7 +652,11 @@ fun ReminderDaysField(
                         focusedBorderColor = Color(0xFF5B7FBD),
                         unfocusedBorderColor = Color(0xFFD1D5DC),
                         unfocusedContainerColor = Color(0xFFF9FAFB),
-                        focusedContainerColor = Color(0xFFF9FAFB)
+                        focusedContainerColor = Color(0xFFF9FAFB),
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        disabledTextColor = Color.Black,
+                        cursorColor = Color.Black
                     ),
                     shape = RoundedCornerShape(10.dp),
                 )

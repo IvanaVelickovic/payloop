@@ -295,6 +295,7 @@ fun SubscriptionCard(subscription: Subscription,
             ) {
                 Text(
                     text = subscription.name,
+                    color = Color.Black,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(bottom = 10.dp)
@@ -368,6 +369,7 @@ fun CardText(subscription: Subscription, currency: String) {
                     append(formattedDate)
                 }
             },
+            color = Color.Black,
             fontSize = 14.sp,
             modifier = Modifier.padding(bottom = 7.dp)
         )
